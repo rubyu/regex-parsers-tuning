@@ -14,12 +14,32 @@ object Main {
     val start = System.currentTimeMillis
     val list = args(0) match {
       case "OrangeSignal" =>
+        /* > sbt "run OrangeSignal test2.tsv"
+         * total row: 12001
+         * total field: 36001
+         * total char: 47448571
+         * total sec: 2.7690
+         * row (per/sec): 4334.0557
+         * field (per/sec): 13001.4443
+         * char (per/sec): 17135634.0000
+         * [success] Total time: 11 s, completed 2014/06/18 22:05:35
+         */
         import com.orangesignal.csv.CsvConfig
         val cfg = new CsvConfig('\t', '\"', '\"')
         cfg.setVariableColumns(true)
         val reader = new CsvReader(input, cfg)
         Iterator.continually(reader.readValues()).takeWhile(_ != null).map { row => row.toList }
       case "Parser1" =>
+        /* > sbt "run Parser1 test2.tsv"
+         * total row: 12000
+         * total field: 36000
+         * total char: 47448571
+         * total sec: 37.2180
+         * row (per/sec): 322.4247
+         * field (per/sec): 967.2739
+         * char (per/sec): 1274882.3750
+         * [success] Total time: 44 s, completed 2014/06/18 22:03:37
+         */
         new Reader(new Parser1, input)
           .collect { case e: Result.Row => e.value }
     }

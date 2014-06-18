@@ -2,53 +2,46 @@
 package com.github.rubyu.parsertuning
 
 import java.io
-import collection.mutable.ListBuffer
 import annotation.tailrec
 
 
 class Reader(parser: Parser, in: io.Reader) extends Iterator[Result.Element] {
 
-  @tailrec
-  private def read(until: Int, i: Int = 0, buffer: ListBuffer[Char] = new ListBuffer[Char]): String = {
-    if (until <= 0) {
-      buffer.mkString
-    }
-    val _i = i + 1
-    if (_i == until) {
-      buffer.mkString
-    } else {
-      in.read() match {
-        case -1 => buffer.mkString
-        case n => buffer += n.toChar; read(until, _i, buffer)
-      }
+  private def read(until: Int): CharSequence = {
+    val buf = new Array[Char](until)
+    in.read(buf) match {
+      case -1 => ""
+      case n => new FastCharSequence(buf, 0, n)
     }
   }
 
-  private var buffer = ""
+  private var buffer: CharSequence = ""
+  private var reachEnd = false
 
   private def parseNext(): Option[Result.Element] = {
     @tailrec
     def _parseNext(last: Boolean = false): Option[Result.Element] = {
-      val reachEnd = read(100000) match {
-        case s if s.isEmpty => true
-        case s => buffer += s; false
-      }
-      buffer match {
-        case buf if buf.isEmpty && reachEnd => None
-        case buf =>
-          parser.parse(if (last) parser.lastLine else parser.line, buf) match {
-            case x if x.successful =>
-              buffer = buf.drop(x.next.offset)
-              x.get match {
-                case elem: Result.EOL => _parseNext()
-                case elem => Some(elem)
-              }
-            case x =>
-              last match {
-                case true => try { Some(Result.InvalidString(buf)) } finally { buffer = "" }
-                case false => if (reachEnd) _parseNext(true) else _parseNext()
-              }
-          }
+      if (buffer.length == 0 && reachEnd) {
+        None
+      } else {
+        parser.parse(if (last) parser.lastLine else parser.line, buffer) match {
+          case x if x.successful =>
+            buffer = buffer.subSequence(x.next.offset, buffer.length)
+            x.get match {
+              case elem: Result.EOL => _parseNext()
+              case elem => Some(elem)
+            }
+          case x =>
+            reachEnd = read(math.max(100000, buffer.length)) match {
+              case s if s.length == 0 => true
+              case s if buffer.length == 0 => buffer = s; false
+              case s => buffer = new FastCharSequence(buffer.toString + s); false
+            }
+            last match {
+              case true => try { Some(Result.InvalidString(buffer.toString)) } finally { buffer = "" }
+              case false => if (reachEnd) _parseNext(true) else _parseNext()
+            }
+        }
       }
     }
     _parseNext()
@@ -69,4 +62,37 @@ class Reader(parser: Parser, in: io.Reader) extends Iterator[Result.Element] {
       case None => parseNext().getOrElse(throw new NoSuchElementException)
     }
   }
+}
+
+import java.lang.CharSequence
+
+/**
+ * todo 複数のArray[Char]を保持するように
+ * https://issues.scala-lang.org/browse/SI-7710
+ */
+class FastCharSequence(chars: Array[Char], val startBounds: Int, val endBounds: Int) extends CharSequence {
+  def this(chars: Array[Char]) = this(chars, 0, chars.length)
+  def this(input: String)      = this(input.toCharArray)
+
+  def length(): Int = endBounds - startBounds
+
+  def charAt(index: Int): Char = {
+    if (index < length) {
+      chars(index + startBounds)
+    } else {
+      throw new IndexOutOfBoundsException(s"$boundsInfo index: $index")
+    }
+  }
+
+  def subSequence(start: Int, end: Int): CharSequence = {
+    if (start >= 0 && start <= length && end >= 0 && end <= length) {
+      new FastCharSequence(chars, startBounds + start, startBounds + end)
+    } else {
+      throw new IndexOutOfBoundsException(s"$boundsInfo start: $start, end $end")
+    }
+  }
+
+  override def toString(): String = new String(chars, startBounds, length)
+
+  private def boundsInfo = s"current: (startBounds: $startBounds, endBounds: $endBounds, length: $length, chars length: ${chars.length})"
 }
