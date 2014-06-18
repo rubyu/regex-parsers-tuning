@@ -48,36 +48,7 @@ class Reader(parser: Parser, in: io.Reader) extends Iterator[Result.Element] {
                 case true => try { Some(Result.InvalidString(buf)) } finally { buffer = "" }
                 case false => if (reachEnd) _parseNext(true) else _parseNext()
               }
-      }
-
-
-      /*
-      read(100000) match {
-        case line if line.isEmpty && lest.nonEmpty => try {
-            parser.parseAll(parser.lastLine, lest) match {
-              case x if x.successful =>
-                x.get match {
-                  case elem: Result.EOL => None
-                  case elem => Some(elem)
-                }
-              case x => Some(Result.InvalidString(lest))
-            }
-          } finally {
-            lest = ""
           }
-        case line if line.isEmpty => None
-        case line =>
-          val text = lest + line
-          parser.parse(parser.line, text) match {
-            case x if x.successful =>
-              lest = text.drop(x.next.offset)
-              x.get match {
-                case elem: Result.EOL => _parseNext()
-                case elem => Some(elem)
-              }
-            case x => lest = text; _parseNext()
-          }
-        */
       }
     }
     _parseNext()
