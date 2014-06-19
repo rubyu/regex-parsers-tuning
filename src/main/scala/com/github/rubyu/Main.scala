@@ -85,6 +85,7 @@ object Main {
          * char (per/sec): 15425414.0000
          * GC .....done.
          * [success] Total time: 20 s, completed 2014/06/19 19:43:31
+         * http://gyazo.com/7551fee534432aec35ef23d705ee3373
          */
         new Reader3(new Parser2, input).collect { case e: Result.Row => e.value }
     }
