@@ -76,15 +76,15 @@ object Main {
         new Reader3(new Parser1, input).collect { case e: Result.Row => e.value }
       case "Reader3WithParser2" =>
         /* > sbt "run Reader3WithParser2 test2.tsv"
-total row: 12000
-total field: 36000
-total char: 47448571
-total sec: 24.7570
-row (per/sec): 484.7114
-field (per/sec): 1454.1342
-char (per/sec): 1916572.0000
-GC .....done.
-[success] Total time: 42 s, completed 2014/06/19 19:31:31
+         * total row: 12000
+         * total field: 36000
+         * total char: 47448571
+         * total sec: 3.0760
+         * row (per/sec): 3901.1704
+         * field (per/sec): 11703.5107
+         * char (per/sec): 15425414.0000
+         * GC .....done.
+         * [success] Total time: 20 s, completed 2014/06/19 19:43:31
          */
         new Reader3(new Parser2, input).collect { case e: Result.Row => e.value }
     }
