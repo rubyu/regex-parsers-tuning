@@ -50,15 +50,15 @@ class ReaderTest extends SpecificationWithJUnit {
       parsers map { parser => readers map {r =>
         val reader = r(parser, new io.StringReader("\n"))
         dump(reader, parser)
-        reader.toList mustEqual List()
+        reader.toList mustEqual List(Result.Row(List()))
         }}
     }
 
-    "parse \\r\\r\\n" in new scope {
+    "parse \\r\\r\\n as two empty Row" in new scope {
       parsers map { parser => readers map {r =>
         val reader = r(parser, new io.StringReader("\r\r\n"))
         dump(reader, parser)
-        reader.toList mustEqual List()
+        reader.toList mustEqual List(Result.Row(List()), Result.Row(List()))
         }}
     }
 
@@ -66,7 +66,7 @@ class ReaderTest extends SpecificationWithJUnit {
       parsers map { parser => readers map {r =>
         val reader = r(parser, new io.StringReader("\r\n"))
         dump(reader, parser)
-        reader.toList mustEqual List()
+        reader.toList mustEqual List(Result.Row(List()))
         }}
     }
 
@@ -130,7 +130,7 @@ class ReaderTest extends SpecificationWithJUnit {
       parsers map { parser => readers map {r =>
         val reader = r(parser, new io.StringReader("a\r\r\n"))
         dump(reader, parser)
-        reader.toList mustEqual List(Result.Row(List("a")))
+        reader.toList mustEqual List(Result.Row(List("a")), Result.Row(List()))
         }}
     }
 
@@ -146,7 +146,7 @@ class ReaderTest extends SpecificationWithJUnit {
       parsers map { parser => readers map {r =>
         val reader = r(parser, new io.StringReader("a\t\"b"))
         dump(reader, parser)
-        reader.toList mustEqual List(Result.Row(List("a", "")), Result.InvalidString("\"b"))
+        reader.toList mustEqual List(Result.InvalidString("a\t\"b"))
         }}
     }
 

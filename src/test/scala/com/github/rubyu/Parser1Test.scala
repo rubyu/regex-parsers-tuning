@@ -11,86 +11,49 @@ class Parser1Test extends SpecificationWithJUnit {
     val parser = new Parser1
   }
 
-  "Parser1.raw_value_0" should {
+  "Parser1.raw_value" should {
     "return empty string value when input is empty" in new scope {
-      parser.parse(parser.raw_value_0, "")
+      parser.parse(parser.raw_value, "")
         .get mustEqual ""
     }
 
     "parse a character" in new scope {
-      parser.parse(parser.raw_value_0, "a")
+      parser.parse(parser.raw_value, "a")
         .get mustEqual "a"
     }
 
     "parse characters" in new scope {
-      parser.parse(parser.raw_value_0, "abc")
+      parser.parse(parser.raw_value, "abc")
         .get mustEqual "abc"
     }
 
     "return empty string value when input is \\n" in new scope {
-      parser.parse(parser.raw_value_0, "\n")
+      parser.parse(parser.raw_value, "\n")
         .get mustEqual ""
     }
 
     "return empty string value when input is \\r" in new scope {
-      parser.parse(parser.raw_value_0, "\r")
+      parser.parse(parser.raw_value, "\r")
         .get mustEqual ""
     }
 
     "return empty string value when input is \\r\\n" in new scope {
-      parser.parse(parser.raw_value_0, "\r\n")
+      parser.parse(parser.raw_value, "\r\n")
         .get mustEqual ""
     }
 
     "parse until \\n" in new scope {
-      parser.parse(parser.raw_value_0, "a\nb")
+      parser.parse(parser.raw_value, "a\nb")
         .get mustEqual "a"
     }
 
     "parse until \\r" in new scope {
-      parser.parse(parser.raw_value_0, "a\rb")
+      parser.parse(parser.raw_value, "a\rb")
         .get mustEqual "a"
     }
 
     "parse until \\r\\n" in new scope {
-      parser.parse(parser.raw_value_0, "a\r\nb")
-        .get mustEqual "a"
-    }
-  }
-
-  "Parser1.raw_value_1" should {
-    "return empty result value when input is empty" in new scope {
-      parser.parse(parser.raw_value_1, "")
-        .isEmpty must beTrue
-    }
-
-    "parse a character" in new scope {
-      parser.parse(parser.raw_value_1, "a")
-        .get mustEqual "a"
-    }
-
-    "parse characters" in new scope {
-      parser.parse(parser.raw_value_1, "abc")
-        .get mustEqual "abc"
-    }
-
-    "return empty result value when input starts with \\n" in new scope {
-      parser.parse(parser.raw_value_1, "\n")
-        .isEmpty must beTrue
-    }
-
-    "return empty result value when input starts with \\r\\n" in new scope {
-      parser.parse(parser.raw_value_1, "\r\n")
-        .isEmpty must beTrue
-    }
-
-    "parse until \\n" in new scope {
-      parser.parse(parser.raw_value_1, "a\nb")
-        .get mustEqual "a"
-    }
-
-    "parse until \\r\\n" in new scope {
-      parser.parse(parser.raw_value_1, "a\r\nb")
+      parser.parse(parser.raw_value, "a\r\nb")
         .get mustEqual "a"
     }
   }
@@ -165,185 +128,97 @@ class Parser1Test extends SpecificationWithJUnit {
     }
   }
 
-  "Parser1.field_0" should {
+  "Parser1.field" should {
     "parse quoted text" in new scope {
-      parser.parse(parser.field_0, "\"a\"")
+      parser.parse(parser.field, "\"a\"")
         .get mustEqual "a"
     }
 
     "parse quoted text with padding before it" in new scope {
-      parser.parse(parser.field_0, " \"a\"")
+      parser.parse(parser.field, " \"a\"")
         .get mustEqual "a"
     }
 
     "parse quoted text with padding after it" in new scope {
-      parser.parse(parser.field_0, "\"a\" ")
+      parser.parse(parser.field, "\"a\" ")
         .get mustEqual "a"
     }
 
     "parse quoted text with paddings both before and after" in new scope {
-      parser.parse(parser.field_0, " \"a\" ")
+      parser.parse(parser.field, " \"a\" ")
         .get mustEqual "a"
     }
 
     "parse raw-text" in new scope {
-      parser.parse(parser.field_0, "a")
+      parser.parse(parser.field, "a")
         .get mustEqual "a"
     }
 
     "parse raw-text with padding before it as raw-text" in new scope {
-      parser.parse(parser.field_0, " a")
+      parser.parse(parser.field, " a")
         .get mustEqual " a"
     }
 
     "parse raw-text with padding after it as raw-text" in new scope {
-      parser.parse(parser.field_0, "a ")
+      parser.parse(parser.field, "a ")
         .get mustEqual "a "
     }
 
     "parse raw-text with paddings both before and after it as raw-text" in new scope {
-      parser.parse(parser.field_0, " a ")
+      parser.parse(parser.field, " a ")
         .get mustEqual " a "
     }
 
     "return empty string when the first character is QUOTE" in new scope {
-      parser.parse(parser.field_0, "\"")
+      parser.parse(parser.field, "\"")
         .get mustEqual ""
     }
 
     "parse text ends with single quote as raw-text" in new scope {
-      parser.parse(parser.field_0, "a\"")
+      parser.parse(parser.field, "a\"")
         .get mustEqual "a\""
     }
 
     "parse text contains single quote as raw-text" in new scope {
-      parser.parse(parser.field_0, "a\"b")
+      parser.parse(parser.field, "a\"b")
         .get mustEqual "a\"b"
     }
 
     "return empty string when input starts with \\n" in new scope {
-      parser.parse(parser.field_0, "\na")
+      parser.parse(parser.field, "\na")
         .get mustEqual ""
     }
 
     "return empty string when input starts with \\r\\n" in new scope {
-      parser.parse(parser.field_0, "\r\na")
+      parser.parse(parser.field, "\r\na")
         .get mustEqual ""
     }
 
     "parse raw-text until \\n" in new scope {
-      parser.parse(parser.field_0, "a\nb")
+      parser.parse(parser.field, "a\nb")
         .get mustEqual "a"
     }
 
     "parse raw-text until \\r\\n" in new scope {
-      parser.parse(parser.field_0, "a\r\nb")
+      parser.parse(parser.field, "a\r\nb")
         .get mustEqual "a"
     }
 
     "parse quoted-text contains \n" in new scope {
-      parser.parse(parser.field_0, "\"a\nb\"")
+      parser.parse(parser.field, "\"a\nb\"")
         .get mustEqual "a\nb"
     }
 
     "parse quoted-text contains \r\n" in new scope {
-      parser.parse(parser.field_0, "\"a\r\nb\"")
-        .get mustEqual "a\r\nb"
-    }
-  }
-
-
-  "Parser1.field_1" should {
-    "parse quoted text" in new scope {
-      parser.parse(parser.field_1, "\"a\"")
-        .get mustEqual "a"
-    }
-
-    "parse quoted text with padding before it" in new scope {
-      parser.parse(parser.field_1, " \"a\"")
-        .get mustEqual "a"
-    }
-
-    "parse quoted text with padding after it" in new scope {
-      parser.parse(parser.field_1, "\"a\" ")
-        .get mustEqual "a"
-    }
-
-    "parse quoted text with paddings both before and after" in new scope {
-      parser.parse(parser.field_1, " \"a\" ")
-        .get mustEqual "a"
-    }
-
-    "parse raw-text" in new scope {
-      parser.parse(parser.field_1, "a")
-        .get mustEqual "a"
-    }
-
-    "parse raw-text with padding before it as raw-text" in new scope {
-      parser.parse(parser.field_1, " a")
-        .get mustEqual " a"
-    }
-
-    "parse raw-text with padding after it as raw-text" in new scope {
-      parser.parse(parser.field_1, "a ")
-        .get mustEqual "a "
-    }
-
-    "parse raw-text with paddings both before and after it as raw-text" in new scope {
-      parser.parse(parser.field_1, " a ")
-        .get mustEqual " a "
-    }
-
-    "return empty result when the first character is QUOTE" in new scope {
-      parser.parse(parser.field_1, "\"")
-        .isEmpty must beTrue
-    }
-
-    "parse text ends with single quote as raw-text" in new scope {
-      parser.parse(parser.field_1, "a\"")
-        .get mustEqual "a\""
-    }
-
-    "parse text contains single quote as raw-text" in new scope {
-      parser.parse(parser.field_1, "a\"b")
-        .get mustEqual "a\"b"
-    }
-
-    "return empty result when input starts with \\n" in new scope {
-      parser.parse(parser.field_1, "\na")
-        .isEmpty must beTrue
-    }
-
-    "return empty result when input starts with \\r\\n" in new scope {
-      parser.parse(parser.field_1, "\r\na")
-        .isEmpty must beTrue
-    }
-
-    "parse raw-text until \\n" in new scope {
-      parser.parse(parser.field_1, "a\nb")
-        .get mustEqual "a"
-    }
-
-    "parse raw-text until \\r\\n" in new scope {
-      parser.parse(parser.field_1, "a\r\nb")
-        .get mustEqual "a"
-    }
-
-    "parse quoted-text contains \\n" in new scope {
-      parser.parse(parser.field_1, "\"a\nb\"")
-        .get mustEqual "a\nb"
-    }
-
-    "parse quoted-text contains \\r\\n" in new scope {
-      parser.parse(parser.field_1, "\"a\r\nb\"")
+      parser.parse(parser.field, "\"a\r\nb\"")
         .get mustEqual "a\r\nb"
     }
   }
 
   "Parser1.row" should {
-    "return empty result when input is empty" in new scope {
+    "return a list contains a emptry string when input is empty" in new scope {
       parser.parse(parser.row, "")
-        .isEmpty must beTrue
+        .get mustEqual List("")
     }
 
     "return a list size is 1 when a raw-text is given" in new scope {

@@ -4,27 +4,18 @@ package com.github.rubyu.parsertuning
 
 class Parser1 extends Parser {
 
-  lazy val row             = row_0 | row_1
+  lazy val row: Parser[List[String]] = repsep( field, delim )
 
-  //サイズが2以上の列。フィールドが空になってもよい。
-  lazy val row_0           = field_0 ~ delim ~ rep1sep( field_0, delim ) ^^ { case head ~ _ ~ tail => head :: tail }
-  //サイズが1の列。フィールドが空になってはいけない。
-  lazy val row_1           = field_1 ^^ { List(_) }
-
-  //長さ0以上
-  lazy val field_0         = quoted_field | raw_value_0
-  //長さ1以上
-  lazy val field_1         = quoted_field | raw_value_1
+  lazy val field         = quoted_field | raw_value
 
   //QUOTEに囲まれていること。前後にスペースによるパディングが存在してもよい。
   lazy val quoted_field    = padding ~> quote ~> quoted_value <~ quote <~ padding
+
   //(QUOTE以外、ダブルクォート、改行)からなる長さ0以上の文字列。
   lazy val quoted_value    = rep( escaped_quote | not_quote | eol ) ^^ { _.mkString }
 
   //QUOTE, DELIM以外から開始し、DELIM以外が後続する、長さ0以上の文字列。
-  lazy val raw_value_0     = (not_quote_and_delim ~ rep( not_delim )).? ^^ { case Some(head ~ tail) => head :: tail mkString; case None => "" }
-  //QUOTE, DELIM以外から開始し、DELIM以外が後続する、長さ1以上の文字列。
-  lazy val raw_value_1     =  not_quote_and_delim ~ rep( not_delim ) ^^ { case head ~ tail => head :: tail mkString }
+  lazy val raw_value     = ( not_quote_and_delim ~ rep( not_delim )).? ^^ { case Some(head ~ tail) => head :: tail mkString; case None => "" }
 
   lazy val padding         = rep( space )
   lazy val escaped_quote   = quote ~ quote ^^^ quote
@@ -36,5 +27,5 @@ class Parser1 extends Parser {
   lazy val space           = ' '
   lazy val quote           = '"'
   lazy val delim           = '\t'
-  lazy val eol             = rep1( "\r" | "\n" ) ^^ { _.mkString }
+  lazy val eol: Parser[String] = "(\r\n|\r|\n)".r
 }
