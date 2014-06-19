@@ -65,15 +65,28 @@ object Main {
          * total row: 12000
          * total field: 36000
          * total char: 47448571
-         * total sec: 38.2920
-         * row (per/sec): 313.3814
-         * field (per/sec): 940.1442
-         * char (per/sec): 1239125.0000
+         * total sec: 39.3310
+         * row (per/sec): 305.1028
+         * field (per/sec): 915.3085
+         * char (per/sec): 1206391.1250
          * GC .....done.
-         * [success] Total time: 59 s, completed 2014/06/19 17:16:30
-         * http://gyazo.com/c68c6b5f77903d4002254e0e5aa39e99
+         * [success] Total time: 50 s, completed 2014/06/19 19:14:53
+         * http://gyazo.com/a536b99df12544feff81c18823e1262e
          */
-        new Reader2(new Parser1, input).collect { case e: Result.Row => e.value }
+        new Reader3(new Parser1, input).collect { case e: Result.Row => e.value }
+      case "Reader3WithParser2" =>
+        /* > sbt "run Reader3WithParser2 test2.tsv"
+total row: 12000
+total field: 36000
+total char: 47448571
+total sec: 24.7570
+row (per/sec): 484.7114
+field (per/sec): 1454.1342
+char (per/sec): 1916572.0000
+GC .....done.
+[success] Total time: 42 s, completed 2014/06/19 19:31:31
+         */
+        new Reader3(new Parser2, input).collect { case e: Result.Row => e.value }
     }
     val result = itr
       .map { row => print("."); row }

@@ -18,7 +18,10 @@ class ReaderTest extends SpecificationWithJUnit {
         (p: Parser, r: io.Reader) => new Reader2(p, r),
         (p: Parser, r: io.Reader) => new Reader3(p, r)
       )
-      val parsers = List(new Parser1)
+      val parsers = List(
+        new Parser1,
+        new Parser2
+      )
 
       def dump(r: Reader, p: Parser) = {
         println(s"reader=${ r.getClass.getName } ,parser=${ p.getClass.getName }")
