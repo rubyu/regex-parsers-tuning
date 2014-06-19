@@ -18,34 +18,34 @@ class Reader3(parser: Parser, in: io.Reader) extends Reader {
   }
 
   private var buffer: CharSequence = ""
-  private var reachEnd = false
+  private var noMoreInput = false
 
   private def parseNext(): Option[Result.Element] = {
     @tailrec
-    def _parseNext(last: Boolean = false): Option[Result.Element] = {
-      if (buffer.length == 0 && reachEnd) {
-        None
-      } else {
-        parser.parse(if (last) parser.lastLine else parser.line, buffer) match {
-          case x if x.successful =>
-            buffer = buffer.subSequence(x.next.offset, buffer.length)
-            x.get match {
-              case elem: Result.EOL => _parseNext()
-              case elem => Some(elem)
-            }
-          case x =>
-            if (!reachEnd) {
-              reachEnd = read(math.max(1000000, buffer.length)) match {
-                case s if s.length == 0 => true
-                case s if buffer.length == 0 => buffer = s; false
-                case s => buffer = new JointCharSequence(buffer, s); false
+    def _parseNext(canBeLast: Boolean = false): Option[Result.Element] = {
+      buffer.length match {
+        case 0 if noMoreInput => None
+        case _ => parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
+            case x if x.successful =>
+              buffer = buffer.subSequence(x.next.offset, buffer.length)
+              x.get match {
+                case elem: Result.EOL => _parseNext()
+                case elem => Some(elem)
               }
-            }
-            last match {
-              case true => try { Some(Result.InvalidString(buffer.toString)) } finally { buffer = "" }
-              case false => if (reachEnd) _parseNext(true) else _parseNext()
-            }
-        }
+            case x if canBeLast => val s = buffer.toString; buffer = ""; Some(Result.InvalidString(s))
+            case x => noMoreInput match {
+                case false => noMoreInput = read(math.max(1000000, buffer.length)) match {
+                  case s if s.length == 0 => true
+                  case s if buffer.length == 0 => buffer = s; false
+                  case s => buffer = new JointCharSequence(buffer, s); false
+                }
+                case _ =>
+              }
+              noMoreInput match {
+                case true => _parseNext(true)
+                case false => _parseNext()
+              }
+          }
       }
     }
     _parseNext()
@@ -112,7 +112,6 @@ object Reader3 {
   }
 
   /**
-   * todo 複数のArray[Char]を保持するように
    * https://issues.scala-lang.org/browse/SI-7710
    */
   class FastCharSequence(chars: Array[Char], val sb: Int, val eb: Int) extends CharSequence {
