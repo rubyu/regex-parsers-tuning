@@ -31,6 +31,7 @@ object Main {
         Iterator.continually(reader.readValues()).takeWhile(_ != null).map { row => row.toList }
       case "Reader1WithParser1" =>
         /* > sbt "run Reader1WithParser1 test2.tsv"
+         * OutOfMemoryError!
          */
         new Reader1(new Parser1, input).collect { case e: Result.Row => e.value }
       case "Reader2WithParser1" =>
