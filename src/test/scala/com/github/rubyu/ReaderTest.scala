@@ -2,7 +2,7 @@
 package com.github.rubyu.parsertuning
 
 import org.specs2.mutable._
-import java.io.StringReader
+import java.io
 import org.specs2.specification.Scope
 
 
@@ -10,120 +10,147 @@ class ReaderTest extends SpecificationWithJUnit {
 
   "Reader" should {
 
+    sequential
+
     trait scope extends Scope {
+      val readers = List(
+        (p: Parser, r: io.Reader) => new Reader1(p, r),
+        (p: Parser, r: io.Reader) => new Reader2(p, r))
       val parsers = List(new Parser1)
+
+      def dump(r: Reader, p: Parser) = {
+        println(s"reader=${ r.getClass.getName } ,parser=${ p.getClass.getName }")
+        System.out.flush()
+      }
+
     }
 
     "parse raw-text" in new scope {
-      parsers map { p =>
-        new Reader(p, new StringReader("a"))
-          .toList mustEqual List(Result.Row(List("a")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")))
+        }}
     }
 
     "parse quoted-text" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\"a\""))
-          .toList mustEqual List(Result.Row(List("a")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\"a\""))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")))
+        }}
     }
 
     "parse \\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\n"))
-          .toList mustEqual List()
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List()
+        }}
     }
 
     "parse \\r\\r\\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\r\r\n"))
-          .toList mustEqual List()
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\r\r\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List()
+        }}
     }
 
     "parse \\r\\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\r\n"))
-          .toList mustEqual List()
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\r\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List()
+        }}
     }
 
     "parse quoted-text contains \\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\"a\nb\""))
-          .toList mustEqual List(Result.Row(List("a\nb")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\"a\nb\""))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a\nb")))
+        }}
     }
 
     "parse raw-text, DELIM, raw-text" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\tb"))
-          .toList mustEqual List(Result.Row(List("a", "b")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\tb"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a", "b")))
+        }}
     }
 
     "parse raw-text, DELIM, raw-test, DELIM, raw-text" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\tb\tc"))
-          .toList mustEqual List(Result.Row(List("a", "b", "c")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\tb\tc"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a", "b", "c")))
+        }}
     }
 
     "parse raw-text, \\n, raw-text" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\nb"))
-          .toList mustEqual List(Result.Row(List("a")), Result.Row(List("b")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\nb"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")), Result.Row(List("b")))
+        }}
     }
 
     "parse raw-text, \\n, raw-text, \\n, raw-text" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\nb\nc"))
-          .toList mustEqual List(Result.Row(List("a")), Result.Row(List("b")), Result.Row(List("c")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\nb\nc"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")), Result.Row(List("b")), Result.Row(List("c")))
+        }}
     }
 
     "parse raw-text, \\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\n"))
-          .toList mustEqual List(Result.Row(List("a")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")))
+        }}
     }
 
     "parse raw-text, \\r\\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\r\n"))
-          .toList mustEqual List(Result.Row(List("a")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\r\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")))
+        }}
     }
 
     "parse raw-text, \\r\\r\\n" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\r\r\n"))
-          .toList mustEqual List(Result.Row(List("a")))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\r\r\n"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a")))
+        }}
     }
 
     "parse un-closed quote-text as InvalidString" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("\"a"))
-          .toList mustEqual List(Result.InvalidString("\"a"))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("\"a"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.InvalidString("\"a"))
+        }}
     }
 
     "parse a Result.Row that has un-closed quote-text as Result.Row, InvalidString" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader("a\t\"b"))
-          .toList mustEqual List(Result.Row(List("a", "")), Result.InvalidString("\"b"))
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader("a\t\"b"))
+        dump(reader, parser)
+        reader.toList mustEqual List(Result.Row(List("a", "")), Result.InvalidString("\"b"))
+        }}
     }
 
     "return empty input when empty input is given" in new scope {
-      parsers map { p =>
-        new Reader(new Parser1, new StringReader(""))
-          .toList mustEqual List()
-      }
+      parsers map { parser => readers map {r =>
+        val reader = r(parser, new io.StringReader(""))
+        dump(reader, parser)
+        reader.toList mustEqual List()
+        }}
     }
   }
 }
