@@ -34,7 +34,7 @@ object Main {
          * field (per/sec): 9052.3008
          * char (per/sec): 11930745.0000
          * [success] Total time: 5 s, completed 2014/06/19 15:00:55
-         * http://gyazo.com/539ac30192c6d60fafc341db227bef18
+         * http://gyazo.com/569a5eba75a1555e222b7972bb819861
          */
         import com.orangesignal.csv.CsvConfig
         val cfg = new CsvConfig('\t', '\"', '\"')
@@ -57,7 +57,7 @@ object Main {
          * field (per/sec): 958.2114
          * char (per/sec): 1262937.7500
          * [success] Total time: 38 s, completed 2014/06/19 14:45:56
-         * http://gyazo.com/6941578699128973e6d1c4a7ff1d4ac8
+         * http://gyazo.com/fd15e0177dc00c1ddff28f139c9e5af3
          */
         new Reader2(new Parser1, input).collect { case e: Result.Row => e.value }
       case "Reader3WithParser1" =>
