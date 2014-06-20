@@ -218,47 +218,47 @@ class Parser1Test extends SpecificationWithJUnit {
   "Parser1.row" should {
     "return a list contains a emptry string when input is empty" in new scope {
       parser.parse(parser.row, "")
-        .get mustEqual List("")
+        .get mustEqual Result.Row(List(""))
     }
 
     "return a list size is 1 when a raw-text is given" in new scope {
       parser.parse(parser.row, "a")
-        .get mustEqual List("a")
+        .get mustEqual Result.Row(List("a"))
     }
 
     "return a list size is 2 when tab separeted 2 raw-text are given" in new scope {
       parser.parse(parser.row, "a\tb")
-        .get mustEqual List("a", "b")
+        .get mustEqual Result.Row(List("a", "b"))
     }
 
     "return a list size is 3 when tab separeted 3 raw-text are given" in new scope {
       parser.parse(parser.row, "a\tb\tc")
-        .get mustEqual List("a", "b", "c")
+        .get mustEqual Result.Row(List("a", "b", "c"))
     }
 
     "return a list size is 1 when a quoted-text is given" in new scope {
       parser.parse(parser.row, "\"a\"")
-        .get mustEqual List("a")
+        .get mustEqual Result.Row(List("a"))
     }
 
     "return a list size is 2 when tab separeted 2 quoted-text is given" in new scope {
       parser.parse(parser.row, "\"a\"\t\"b\"")
-        .get mustEqual List("a", "b")
+        .get mustEqual Result.Row(List("a", "b"))
     }
 
     "return a list size is 2 when a tab is given" in new scope {
       parser.parse(parser.row, "\t")
-        .get mustEqual List("", "")
+        .get mustEqual Result.Row(List("", ""))
     }
 
     "return a list size is 3 when 2 tabs are given" in new scope {
       parser.parse(parser.row, "\t\t")
-        .get mustEqual List("", "", "")
+        .get mustEqual Result.Row(List("", "", ""))
     }
 
     "parse until the end of a row expression" in new scope {
       parser.parse(parser.row, "\"a\"b")
-        .get mustEqual List("a")
+        .get mustEqual Result.Row(List("a"))
       parser.parse(parser.row, "\"a\"b")
         .next.offset mustEqual 3
     }
