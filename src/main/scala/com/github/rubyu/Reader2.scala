@@ -28,10 +28,7 @@ class Reader2(parser: Parser, in: io.Reader) extends Reader {
         parser.parse(if (last) parser.lastLine else parser.line, buffer) match {
           case x if x.successful =>
             buffer = buffer.subSequence(x.next.offset, buffer.length)
-            x.get match {
-              case elem: Result.EOL => _parseNext()
-              case elem => Some(elem)
-            }
+            Some(x.get)
           case x =>
             reachEnd = read(math.max(100000, buffer.length)) match {
               case s if s.length == 0 => true

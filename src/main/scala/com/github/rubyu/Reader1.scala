@@ -40,10 +40,7 @@ class Reader1(parser: Parser, in: io.Reader) extends Reader {
           parser.parse(if (last) parser.lastLine else parser.line, buf) match {
             case x if x.successful =>
               buffer = buf.drop(x.next.offset)
-              x.get match {
-                case elem: Result.EOL => _parseNext()
-                case elem => Some(elem)
-              }
+              Some(x.get)
             case x =>
               last match {
                 case true => try { Some(Result.InvalidString(buf)) } finally { buffer = "" }

@@ -28,10 +28,7 @@ class Reader3(parser: Parser, in: io.Reader) extends Reader {
         case _ => parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
             case x if x.successful =>
               buffer = buffer.subSequence(x.next.offset, buffer.length)
-              x.get match {
-                case elem: Result.EOL => _parseNext()
-                case elem => Some(elem)
-              }
+              Some(x.get)
             case x if canBeLast => val s = buffer.toString; buffer = ""; Some(Result.InvalidString(s))
             case x => noMoreInput match {
                 case false => noMoreInput = read(math.max(1000000, buffer.length)) match {
