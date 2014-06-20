@@ -25,16 +25,22 @@ class Reader3(parser: Parser, in: io.Reader) extends Reader {
     def _parseNext(canBeLast: Boolean = false): Option[Result.Element] = {
       buffer.length match {
         case 0 if noMoreInput => None
-        case _ => parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
+        case _ =>
+          parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
             case x if x.successful =>
               buffer = buffer.subSequence(x.next.offset, buffer.length)
               Some(x.get)
-            case x if canBeLast => val s = buffer.toString; buffer = ""; Some(Result.InvalidString(s))
-            case x => noMoreInput match {
-                case false => noMoreInput = read(math.max(1000000, buffer.length)) match {
-                  case s if s.length == 0 => true
-                  case s if buffer.length == 0 => buffer = s; false
-                  case s => buffer = new JointCharSequence(buffer, s); false
+            case x if canBeLast =>
+              val result = Result.InvalidString(buffer.toString)
+              buffer = ""
+              Some(result)
+            case x =>
+              noMoreInput match {
+                case false =>
+                  noMoreInput = read(math.max(1000000, buffer.length)) match {
+                    case s if s.length == 0 => true
+                    case s if buffer.length == 0 => buffer = s; false
+                    case s => buffer = new JointCharSequence(buffer, s); false
                 }
                 case _ =>
               }
