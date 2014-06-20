@@ -79,15 +79,29 @@ object Main {
          * total row: 12000
          * total field: 36000
          * total char: 47448571
-         * total sec: 3.0760
-         * row (per/sec): 3901.1704
-         * field (per/sec): 11703.5107
-         * char (per/sec): 15425414.0000
+         * total sec: 3.3910
+         * row (per/sec): 3538.7791
+         * field (per/sec): 10616.3369
+         * char (per/sec): 13992501.0000
          * GC .....done.
-         * [success] Total time: 20 s, completed 2014/06/19 19:43:31
-         * http://gyazo.com/7551fee534432aec35ef23d705ee3373
+         * [success] Total time: 14 s, completed 2014/06/20 12:29:40
+         * http://gyazo.com/c01c0eddc404381ec9813fd46994f97d
          */
         new Reader3(new Parser2, input).collect { case e: Result.Row => e.value }
+      case "Reader3WithParser3" =>
+        /* > sbt "run Reader3WithParser3 test2.tsv"
+         * total row: 12000
+         * total field: 36000
+         * total char: 47448571
+         * total sec: 3.3130
+         * row (per/sec): 3622.0947
+         * field (per/sec): 10866.2842
+         * char (per/sec): 14321936.0000
+         * GC .....done.
+         * [success] Total time: 14 s, completed 2014/06/20 12:27:07
+         * http://gyazo.com/729309975e866c310256cd5cd562f3e6
+         */
+        new Reader3(new Parser3, input).collect { case e: Result.Row => e.value }
     }
     val result = itr
       .map { row => print("."); row }

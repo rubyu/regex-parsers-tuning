@@ -20,7 +20,8 @@ class ReaderTest extends SpecificationWithJUnit {
       )
       val parsers = List(
         new Parser1,
-        new Parser2
+        new Parser2,
+        new Parser3
       )
 
       def dump(r: Reader, p: Parser) = {
