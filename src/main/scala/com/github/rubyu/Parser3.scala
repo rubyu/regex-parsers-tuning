@@ -11,7 +11,7 @@ class Parser3 extends Parser {
   val ls : Parser[String] = new Regex(LS)
   val fs : Parser[String] = new Regex(FS)
 
-  //長さ0以上の文字列
+  //長さ0以上の文字列。
   lazy val field        : Parser[String] = quoted_field | raw_field
 
   //QUOTEに囲まれていること。前後にスペースによるパディングが存在してもよい。

@@ -7,7 +7,7 @@ class Parser1 extends Parser {
   lazy val fs : Parser[String] = "\t"
   lazy val ls : Parser[String] = "(\r\n|\r|\n)".r
 
-  //長さ0以上の文字列
+  //長さ0以上の文字列。
   lazy val field             = quoted_field | raw_value
 
   //QUOTEに囲まれていること。前後にスペースによるパディングが存在してもよい。
