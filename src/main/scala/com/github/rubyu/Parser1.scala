@@ -4,17 +4,19 @@ package com.github.rubyu.parsertuning
 
 class Parser1 extends Parser {
 
+  //空のfieldがありえるので、sizeは1以上になる
   lazy val row: Parser[List[String]] = repsep( field, delim )
 
+  //長さ0以上の文字列
   lazy val field         = quoted_field | raw_value
 
   //QUOTEに囲まれていること。前後にスペースによるパディングが存在してもよい。
   lazy val quoted_field    = padding ~> quote ~> quoted_value <~ quote <~ padding
 
-  //(QUOTE以外、ダブルクォート、改行)からなる長さ0以上の文字列。
+  //QUOTE以外の文字, エスケープされたQUOTEからなる長さ0以上の文字列。
   lazy val quoted_value    = rep( escaped_quote | not_quote | eol ) ^^ { _.mkString }
 
-  //QUOTE, DELIM以外から開始し、DELIM以外が後続する、長さ0以上の文字列。
+  //QUOTE, fs, ls以外から開始し、fs, ls以外が後続する、長さ0以上の文字列。
   lazy val raw_value     = ( not_quote_and_delim ~ rep( not_delim )).? ^^ { case Some(head ~ tail) => head :: tail mkString; case None => "" }
 
   lazy val padding         = rep( space )
