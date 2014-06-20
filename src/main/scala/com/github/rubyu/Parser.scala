@@ -6,10 +6,11 @@ import util.parsing.combinator.RegexParsers
 
 trait Parser extends RegexParsers {
   override val skipWhitespace = false
-  lazy val line: Parser[Result.Element] = rowElement <~ eol
-  lazy val lastLine: Parser[Result.Element] = rowElement <~ eof
+  lazy val line: Parser[Result.Element] = eol ^^^ Result.Row(Nil) | rowElement <~ eol
+  lazy val lastLine: Parser[Result.Element] = eof ^^^ Result.Row(Nil) | rowElement <~ eof | invalidString
 
-  lazy val rowElement: Parser[Result.Element] = row ^^ { x => Result.Row(if (x.size == 1 && x(0).isEmpty) List[String]() else x) }
+  lazy val invalidString: Parser[Result.Element] = """.+""".r ^^ { Result.InvalidString(_) }
+  lazy val rowElement: Parser[Result.Element] = row ^^ { Result.Row(_) }
 
   def row: Parser[List[String]]
   def eol: Parser[String]

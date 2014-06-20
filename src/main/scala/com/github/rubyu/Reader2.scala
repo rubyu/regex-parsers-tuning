@@ -35,10 +35,7 @@ class Reader2(parser: Parser, in: io.Reader) extends Reader {
               case s if buffer.length == 0 => buffer = s; false
               case s => buffer = new FastCharSequence(buffer.toString + s); false
             }
-            last match {
-              case true => try { Some(Result.InvalidString(buffer.toString)) } finally { buffer = "" }
-              case false => if (reachEnd) _parseNext(true) else _parseNext()
-            }
+            _parseNext(reachEnd)
         }
       }
     }

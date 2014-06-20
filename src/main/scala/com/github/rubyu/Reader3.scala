@@ -18,36 +18,27 @@ class Reader3(parser: Parser, in: io.Reader) extends Reader {
   }
 
   private var buffer: CharSequence = ""
-  private var noMoreInput = false
+  private var reachEnd = false
 
   private def parseNext(): Option[Result.Element] = {
     @tailrec
     def _parseNext(canBeLast: Boolean = false): Option[Result.Element] = {
       buffer.length match {
-        case 0 if noMoreInput => None
+        case 0 if reachEnd => None
         case _ =>
           parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
             case x if x.successful =>
               buffer = buffer.subSequence(x.next.offset, buffer.length)
               Some(x.get)
-            case x if canBeLast =>
-              val result = Result.InvalidString(buffer.toString)
-              buffer = ""
-              Some(result)
             case x =>
-              noMoreInput match {
-                case false =>
-                  noMoreInput = read(math.max(1000000, buffer.length)) match {
-                    case s if s.length == 0 => true
-                    case s if buffer.length == 0 => buffer = s; false
-                    case s => buffer = new JointCharSequence(buffer, s); false
+              if (!reachEnd) {
+                reachEnd = read(math.max(1000000, buffer.length)) match {
+                  case s if s.length == 0 => true
+                  case s if buffer.length == 0 => buffer = s; false
+                  case s => buffer = new JointCharSequence(buffer, s); false
                 }
-                case _ =>
               }
-              noMoreInput match {
-                case true => _parseNext(true)
-                case false => _parseNext()
-              }
+              _parseNext(reachEnd)
           }
       }
     }
