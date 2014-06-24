@@ -16,7 +16,8 @@ class ReaderTest extends SpecificationWithJUnit {
       val readers = List(
         (p: Parser, r: io.Reader) => new Reader1(p, r),
         (p: Parser, r: io.Reader) => new Reader2(p, r),
-        (p: Parser, r: io.Reader) => new Reader3(p, r)
+        (p: Parser, r: io.Reader) => new Reader3(p, r),
+        (p: Parser, r: io.Reader) => new Reader4(p, r)
       )
       val parsers = List(
         new Parser1,

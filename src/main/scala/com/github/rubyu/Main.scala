@@ -102,6 +102,19 @@ object Main {
          * http://gyazo.com/729309975e866c310256cd5cd562f3e6
          */
         new Reader3(new Parser3, input).collect { case e: Result.Row => e.value }
+      case "Reader4WithParser3" =>
+        /* > sbt "run Reader4WithParser3 test2.tsv"
+         * total row: 12000
+         * total field: 36000
+         * total char: 47448571
+         * total sec: 4.5540
+         * row (per/sec): 2635.0461
+         * field (per/sec): 7905.1387
+         * char (per/sec): 10419098.0000
+         * GC .....done.
+         * [success] Total time: 15 s, completed 2014/06/24 14:09:29
+         */
+        new Reader4(new Parser3, input).collect { case e: Result.Row => e.value }
     }
     val result = itr
       .map { row => print("."); row }
