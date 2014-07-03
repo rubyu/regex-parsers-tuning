@@ -7,12 +7,35 @@ import annotation.tailrec
 import util.matching.Regex
 import util.parsing.combinator.RegexParsers
 
+object Quote {
 
-case class QuoteOption(Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) {
-  def withQuote(Q: Char) = this.copy(Q=Some(Q))
-  def withEscape(E: Char) = this.copy(E=Some(E))
-  def withPattern(P: Regex) = this.copy(P=Some(P))
+  trait QuoteMode
+
+  case class QuoteAll(Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+    def withQuote(Q: Char) = this.copy(Q=Some(Q))
+    def withEscape(E: Char) = this.copy(E=Some(E))
+    def withPattern(P: Regex) = this.copy(P=Some(P))
+  }
+
+  case class QuoteMin(Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+    def withQuote(Q: Char) = this.copy(Q=Some(Q))
+    def withEscape(E: Char) = this.copy(E=Some(E))
+    def withPattern(P: Regex) = this.copy(P=Some(P))
+  }
+
+  case class QuoteNone(E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+    def withEscape(E: Char) = this.copy(E=Some(E))
+    def withPattern(P: Regex) = this.copy(P=Some(P))
+  }
+
+  def All = QuoteAll() withQuote('"')
+  def Min = QuoteMin() withQuote('"')
+  def None = QuoteNone()
 }
+
+
+import Quote.{ QuoteMode, QuoteAll, QuoteMin, QuoteNone }
+
 
 class WokParser(parser: Parser, in: io.Reader) extends Reader {
 
@@ -28,115 +51,28 @@ class WokParser(parser: Parser, in: io.Reader) extends Reader {
     def EOF   : Regex = """\z""".r
   }
 
-  class Parser1(val FS: Regex, val RS: Regex, val Q: Char, val E: Char) extends Parser {
+  case class ParserImpl(FS: Regex, RS: Regex, QM: QuoteMode) extends Parser {
 
-    /*
-    case (All, Q, E) => quote all, escape Q with E
-     */
+    lazy val field : Parser[String] = QM match {
+      case QuoteAll (Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
+      case QuoteAll (Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
+      case QuoteMin (Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
+      case QuoteMin (Some(q),    None, _) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
+      case QuoteNone(         Some(e), _) => non_quoted(e)                           // escape (E|FS|RS) with E
+      case QuoteNone(            None, _) => non_quoted                              // escape nothing
+    }
 
-    //  長さ0以上の文字列。
-    lazy val field        : Parser[String] = quoted_field
-
-    // Qで囲まれていること。Qの前後の空白は無視される。
-    lazy val quoted_field : Parser[String] = " *".r ~> Q ~> quoted_value <~ Q <~ " *".r
-
-    //　EQ => Q, EE => E のみエスケープ。EとQは単独で出現してはならない。
-    lazy val quoted_value : Parser[String] = rep( E ~> Q | E ~> E | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
-
+    //  Quoteで囲まれていること。
+    def quoted(Q: Char, T: Parser[String]) : Parser[String] = Q ~> T <~ Q
+    //  QuoteでエスケープされたQuoteか、Quote以外からなる、長さ0以上の文字列。
+    def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""((?!$Q).)+""".r ) ^^ { _.mkString }
+    //  EscapeされたEscape・Quoteか、Escape・Quote以外からなる、長さ0以上の文字列。
+    def text(Q: Char, E: Char)             : Parser[String] = rep( E ~> Q | E ~> E | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
+    //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
+    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!$E)(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
+    //  FS・RS以外からなる、長さ0以上の文字列。
+    def non_quoted                         : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
   }
-
-  class Parser2(val FS: Regex, val RS: Regex, val Q: Char, val E: Char) extends Parser {
-
-    /*
-    case (Min, Q, E) => quote if contains Q, escape Q with E
-     */
-
-    //  長さ0以上の文字列。
-    lazy val field        : Parser[String] = quoted_field | raw_field
-
-    // Qで囲まれていること。Qの前後の空白は無視される。
-    lazy val quoted_field : Parser[String] = " *".r ~> Q ~> quoted_value <~ Q <~ " *".r
-
-    //　EQ => Q, EE => E のみエスケープ。EとQは単独で出現してはならない。
-    lazy val quoted_value : Parser[String] = rep( E ~> Q | E ~> E | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
-
-    //  先頭にQ、FS、RSが出現してはならない。FSとRS以外が後続する。
-    lazy val raw_field    : Parser[String] = s"""(((?!$FS)(?!$RS)(?!$Q).)((?!$FS)(?!$RS).)*)?""".r
-
-  }
-
-  class Parser3(val FS: Regex, val RS: Regex) extends Parser {
-
-    /*
-    case (None) => quote nothing
-     */
-
-    //  長さ0以上の文字列。
-    lazy val field       : Parser[String] = non_escaped
-
-    //  先頭にFS、RS以外からなる文字列。
-    lazy val non_escaped : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
-
-  }
-
-  class Parser4(val FS: Regex, val RS: Regex, val E: Char) extends Parser {
-
-    /*
-    case (None, E) => quote match(FS|RS) with E
-     */
-
-    //  長さ0以上の文字列。
-    lazy val field   : Parser[String] = escaped
-
-    //  エスケープされたE, FS, RS, またはE, FS, RS以外からなる文字列。
-    lazy val escaped : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!$E)(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
-
-  }
-
-  /*
-  in: InputStream
-  CD //codec
-  FS //field separator pattern  //空白の時は？　空白NGで、 (?!.). とかにすれば絶対にマッチしないのでいいんでは
-  RS //row separator pattern  //空白はNG
-  FQ = Quote.All | Quote.Min | Quote.None withQuote withEscape withFilter
-        addFilter のほうがいい？ addFilter("\r\n") →順序が保証されない
-
-  case (All, Q, E) => quote all, escape Q with E
-
-    field        : Parser[String] = quoted_field
-    // Qで囲まれていること。Qの前後の空白は無視される。
-    quoted_field : Parser[String] = " *$Q".r ~> quoted_value <~ "$Q *".r
-    //　EQ => Q, EE => E のみエスケープ。EとQは単独で出現してはならない。
-    quoted_value : Parser[String] = rep( E ~ Q ^^^ Q | E ~ E ^^^ E | """((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
-
-  case (Min, Q, E) => quote if contains Q, escape Q with E
-
-    field        : Parser[String] = quoted_field | raw_field
-    // Qで囲まれていること。Qの前後の空白は無視される。
-    quoted_field : Parser[String] = " *$Q".r ~> quoted_value <~ "$Q *".r
-    //　EQ => Q, EE => E のみエスケープ。EとQは単独で出現してはならない。
-    quoted_value : Parser[String] = rep( E ~ Q ^^^ Q | E ~ E ^^^ E | """((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
-    //  先頭にQ、FS、RSが出現してはならない。FSとRS以外が後続する。
-    raw_field    : Parser[String] = s"""(((?!$FS)(?!$LS)(?!$Q).)((?!$FS)(?!$RS).)*)?""".r
-
-  case (None) => quote nothing
-
-    field        : Parser[String] = raw_field
-    //  先頭にFS、RS以外からなる文字列。
-    raw_field    : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
-
-  case (None, E) => quote match(FS|RS) with E
-
-    field        : Parser[String] = escaped
-    //  エスケープされたE, FS, RS, またはE, FS, RS以外からなる文字列。
-    escaped = rep( E ~ E ^^^ E | E ~ FS ^^^ FS | E ~ RS ^^^ RS | """((?!$E)(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
-
-  case (None, E, P) => quote match(P) with E
-    //parserは同上。
-
-
-   */
-
 
   private def read(until: Int): CharSequence = {
     val buf = new Array[Char](until)
