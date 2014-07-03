@@ -66,8 +66,8 @@ class WokParser(parser: Parser, in: io.Reader) extends Reader {
     def quoted(Q: Char, T: Parser[String]) : Parser[String] = Q ~> T <~ Q
     //  QuoteでエスケープされたQuoteか、Quote以外からなる、長さ0以上の文字列。
     def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""((?!$Q).)+""".r ) ^^ { _.mkString }
-    //  EscapeされたEscape・Quoteか、Escape・Quote以外からなる、長さ0以上の文字列。
-    def text(Q: Char, E: Char)             : Parser[String] = rep( E ~> Q | E ~> E | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
+    //  EscapeされたEscape・Quote・FS・RSか、Escape・Quote以外からなる、長さ0以上の文字列。
+    def text(Q: Char, E: Char)             : Parser[String] = rep( E ~> E | E ~> Q | E ~> FS | E ~> RS | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
     //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
     def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!$E)(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
     //  FS・RS以外からなる、長さ0以上の文字列。
