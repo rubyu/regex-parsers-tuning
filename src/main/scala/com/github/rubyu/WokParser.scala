@@ -88,11 +88,10 @@ object WokParser {
     //  FS・RS以外からなる、長さ0以上の文字列。
     def non_quoted                         : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
 
-    def rsafe(E: Char): String = E match {
-      case c if c == '\\' => """\\"""
-      case c if c == '*' | c == '+' | c == '.' | c =='?' | c =='{' | c =='}' | c =='(' | c ==')' |
-                 c =='[' | c ==']' | c =='^' | c =='$' | c =='-' | c =='|'  => """\""" + c.toString
-      case c => c.toString
+    def rsafe(c: Char): String = c match {
+      case '\\' => """\\"""
+      case '*' | '+' | '.' | '?' | '{' | '}' | '(' | ')' | '[' | ']' | '^' |'$' | '-' | '|'  => """\""" + c.toString
+      case _ => c.toString
     }
   }
 
