@@ -421,6 +421,45 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
+  "WokParser.ParserImpl with QuoteAll" should {
+    "parse quoted strings" in {
+      val FS = "\t".r
+      val RS = "(\r\n|\r|\n)".r
+      val FQ = Quote.All
+      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+
+      parser.parse(parser.field, "\"\"").get mustEqual ""
+      parser.parse(parser.field, "\"a\"").get mustEqual "a"
+      parser.parse(parser.field, "\"a\"\t\"\"").get mustEqual "a"
+      parser.parse(parser.field, "\"a\"\r\n").get mustEqual "a"
+      parser.parse(parser.field, "\"a\"\r").get mustEqual "a"
+      parser.parse(parser.field, "\"a\"\n").get mustEqual "a"
+    }
+
+    "parse Row" in {
+      val FS = "\t".r
+      val RS = "(\r\n|\r|\n)".r
+      val FQ = Quote.All
+      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+
+      parser.parse(parser.line, "\"\"").get mustEqual Row1(List(""), Nil, "")
+      parser.parse(parser.line, "\"a\"").get mustEqual Row1(List("a"), Nil, "")
+
+      parser.parse(parser.line, "\"\"\r\n").get mustEqual Row1(List(""), Nil, "\r\n")
+      parser.parse(parser.line, "\"\"\r").get mustEqual Row1(List(""), Nil, "\r")
+      parser.parse(parser.line, "\"\"\n").get mustEqual Row1(List(""), Nil, "\n")
+
+      parser.parse(parser.line, "\"a\"\r\n").get mustEqual Row1(List("a"), Nil, "\r\n")
+      parser.parse(parser.line, "\"a\"\r").get mustEqual Row1(List("a"), Nil, "\r")
+      parser.parse(parser.line, "\"a\"\n").get mustEqual Row1(List("a"), Nil, "\n")
+
+      parser.parse(parser.line, "\"\"\t\"\"").get mustEqual Row1(List("", ""), List("\t"), "")
+      parser.parse(parser.line, "\"a\"\t\"\"").get mustEqual Row1(List("a", ""), List("\t"), "")
+      parser.parse(parser.line, "\"a\"\t\"b\"").get mustEqual Row1(List("a", "b"), List("\t"), "")
+      parser.parse(parser.line, "\"a\"\t\"b\"\t\"c\"").get mustEqual Row1(List("a", "b", "c"), List("\t", "\t"), "")
+    }
+  }
+
   "WokParser.ParserImpl with QuoteAll with Escape" should {
     "parse quoted strings" in {
       val FS = "\t".r
