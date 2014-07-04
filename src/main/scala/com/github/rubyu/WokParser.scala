@@ -64,6 +64,8 @@ object WokParser {
     def FS    : Regex
     def RS    : Regex
     def EOF   : Regex = """\z""".r
+
+    def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
   }
 
   class ParserImpl(val FS: Regex, val RS: Regex, val QM: QuoteMode) extends Parser {
@@ -95,11 +97,10 @@ object WokParser {
     }
   }
 
-  /*
-  trait Reader extends Iterator[Result] {
+  trait WokReader extends Iterator[Result] {
 
-    val in: io.Reader
-    var parser: Parser
+    def in: io.Reader
+    def parser: ParserImpl
 
     private def read(until: Int): CharSequence = {
       val buf = new Array[Char](until)
@@ -118,7 +119,7 @@ object WokParser {
         buffer.length match {
           case 0 if reachEnd => None
           case _ =>
-            parser.parse(parser.line, buffer) match {
+            parser.parse(buffer) match {
               case x if x.successful =>
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
                 Some(x.get.toRow(0))
@@ -220,5 +221,4 @@ object WokParser {
 
     override def toString(): String = new String(chars, sb, length)
   }
-  */
 }
