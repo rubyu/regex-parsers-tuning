@@ -1,5 +1,5 @@
 
-package com.github.rubyu.parsertuning
+package com.github.rubyu.parsertuning.wok
 
 import java.io
 import java.lang.CharSequence
@@ -11,19 +11,19 @@ object Quote {
 
   trait QuoteMode
 
-  case class QuoteAll(Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+  case class QuoteAll(Q: Option[Char] = scala.None, E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
     def withQuote(Q: Char) = this.copy(Q=Some(Q))
     def withEscape(E: Char) = this.copy(E=Some(E))
     def withPattern(P: Regex) = this.copy(P=Some(P))
   }
 
-  case class QuoteMin(Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+  case class QuoteMin(Q: Option[Char] = scala.None, E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
     def withQuote(Q: Char) = this.copy(Q=Some(Q))
     def withEscape(E: Char) = this.copy(E=Some(E))
     def withPattern(P: Regex) = this.copy(P=Some(P))
   }
 
-  case class QuoteNone(E: Option[Char] = None, P: Option[Regex] = None) extends QuoteMode {
+  case class QuoteNone(E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
     def withEscape(E: Char) = this.copy(E=Some(E))
     def withPattern(P: Regex) = this.copy(P=Some(P))
   }
@@ -37,13 +37,28 @@ object Quote {
 import Quote.{ QuoteMode, QuoteAll, QuoteMin, QuoteNone }
 
 
-class WokParser(parser: Parser, in: io.Reader) extends Reader {
+object WokParser {
+
+  case class Row0(field: List[String], sep: List[String]) {
+    def toRow1(term: String) = Row1(field, sep, term)
+  }
+  case class Row1(field: List[String], sep: List[String], term: String) {
+    def toRow(id: Long) = Row(id, field, sep, term)
+  }
+  trait Result
+  case class Row(id: Long, field: List[String], sep: List[String], term: String) extends Result
+  case class Error(remaining: CharSequence) extends Result
 
   trait Parser extends RegexParsers {
     override val skipWhitespace = false
 
-    lazy val line : Parser[Result.Element] = (RS | EOF)  ^^^ Result.Row(Nil) | row <~ (RS | EOF)
-    lazy val row  : Parser[Result.Element] = repsep( field, FS ) ^^ { Result.Row(_) }
+    lazy val line      : Parser[Row1] = empty_row | row ~ (RS | EOF) ^^ { case row0 ~ term => row0.toRow1(term) }
+    lazy val empty_row : Parser[Row1] = (RS | EOF) ^^ { Row1(Nil, Nil, _) }
+
+    lazy val row       : Parser[Row0] = ( rep( field ~ FS ) ).? ~ field ^^ {
+      case Some(x) ~ last => x.map {case f ~ fs => (f, fs) }.unzip match { case (t1, t2) => Row0(t1 :+ last, t2) }
+      case None ~ f       => Row0(List(f), Nil)
+    }
 
     def field : Parser[String]
     def FS    : Regex
@@ -51,7 +66,7 @@ class WokParser(parser: Parser, in: io.Reader) extends Reader {
     def EOF   : Regex = """\z""".r
   }
 
-  case class ParserImpl(FS: Regex, RS: Regex, QM: QuoteMode) extends Parser {
+  class ParserImpl(val FS: Regex, val RS: Regex, val QM: QuoteMode) extends Parser {
 
     lazy val field : Parser[String] = QM match {
       case QuoteAll (Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
@@ -65,71 +80,83 @@ class WokParser(parser: Parser, in: io.Reader) extends Reader {
     //  Quoteで囲まれていること。
     def quoted(Q: Char, T: Parser[String]) : Parser[String] = Q ~> T <~ Q
     //  QuoteでエスケープされたQuoteか、Quote以外からなる、長さ0以上の文字列。
-    def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""((?!$Q).)+""".r ) ^^ { _.mkString }
+    def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""((?!${ rsafe(Q) }).)+""".r ) ^^ { _.mkString }
     //  EscapeされたEscape・Quote・FS・RSか、Escape・Quote以外からなる、長さ0以上の文字列。
-    def text(Q: Char, E: Char)             : Parser[String] = rep( E ~> E | E ~> Q | E ~> FS | E ~> RS | s"""((?!$Q)(?!$E).)+""".r ) ^^ { _.mkString }
+    def text(Q: Char, E: Char)             : Parser[String] = rep( E ~> E | E ~> Q | E ~> FS | E ~> RS | s"""((?!${ rsafe(Q) })(?!${ rsafe(E) }).)+""".r ) ^^ { _.mkString }
     //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
-    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!$E)(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
+    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!${ rsafe(E) })(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
     //  FS・RS以外からなる、長さ0以上の文字列。
     def non_quoted                         : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
-  }
 
-  private def read(until: Int): CharSequence = {
-    val buf = new Array[Char](until)
-    in.read(buf) match {
-      case -1 => ""
-      case n => new WokParser.FastCharSequence(buf, 0, n)
+    def rsafe(E: Char): String = E match {
+      case c if c == '\\' => """\\"""
+      case c if c == '*' | c == '+' | c == '.' | c =='?' | c =='{' | c =='}' | c =='(' | c ==')' |
+                 c =='[' | c ==']' | c =='^' | c =='$' | c =='-' | c =='|'  => """\""" + c.toString
+      case c => c.toString
     }
   }
 
-  private var buffer: CharSequence = ""
-  private var reachEnd = false
+  /*
+  trait Reader extends Iterator[Result] {
 
-  private def parseNext(): Option[Result.Element] = {
-    @tailrec
-    def _parseNext(canBeLast: Boolean = false): Option[Result.Element] = {
-      buffer.length match {
-        case 0 if reachEnd => None
-        case _ =>
-          parser.parse(if (canBeLast) parser.lastLine else parser.line, buffer) match {
-            case x if x.successful =>
-              buffer = buffer.subSequence(x.next.offset, buffer.length)
-              Some(x.get)
-            case x =>
-              if (!reachEnd) {
-                reachEnd = read(math.max(1000000, buffer.length)) match {
-                  case s if s.length == 0 => true
-                  case s if buffer.length == 0 => buffer = s; false
-                  case s => buffer = new WokParser.JointCharSequence(buffer, s); false
-                }
-              }
-              _parseNext(reachEnd)
-          }
+    val in: io.Reader
+    var parser: Parser
+
+    private def read(until: Int): CharSequence = {
+      val buf = new Array[Char](until)
+      in.read(buf) match {
+        case -1 => ""
+        case n => new FastCharSequence(buf, 0, n)
       }
     }
-    _parseNext()
-  }
 
-  private var _next: Option[Result.Element] = None
+    private var buffer: CharSequence = ""
+    private var reachEnd = false
 
-  def hasNext = {
-    _next match {
-      case Some(x) => true
-      case None => _next = parseNext(); _next.isDefined
+    private def parseNext(): Option[Result] = {
+      @tailrec
+      def _parseNext(canBeLast: Boolean = false): Option[Result] = {
+        buffer.length match {
+          case 0 if reachEnd => None
+          case _ =>
+            parser.parse(parser.line, buffer) match {
+              case x if x.successful =>
+                buffer = buffer.subSequence(x.next.offset, buffer.length)
+                Some(x.get.toRow(0))
+              case x if canBeLast =>
+                Some(Error(buffer))
+              case x =>
+                if (!reachEnd) {
+                  reachEnd = read(math.max(1000000, buffer.length)) match {
+                    case s if s.length == 0 => true
+                    case s if buffer.length == 0 => buffer = s; false
+                    case s => buffer = new JointCharSequence(buffer, s); false
+                  }
+                }
+                _parseNext(reachEnd)
+            }
+        }
+      }
+      _parseNext()
+    }
+
+    private var _next: Option[Result] = None
+
+    def hasNext = {
+      _next match {
+        case Some(x) => true
+        case None => _next = parseNext(); _next.isDefined
+      }
+    }
+
+    def next() = {
+      _next match {
+        case Some(x) => _next = None; x
+        case None => parseNext().getOrElse(throw new NoSuchElementException)
+      }
     }
   }
 
-  def next() = {
-    _next match {
-      case Some(x) => _next = None; x
-      case None => parseNext().getOrElse(throw new NoSuchElementException)
-    }
-  }
-
-}
-
-
-object WokParser {
   class JointCharSequence(a: CharSequence, b: CharSequence) extends CharSequence {
     lazy val length = a.length + b.length
 
@@ -194,4 +221,5 @@ object WokParser {
 
     override def toString(): String = new String(chars, sb, length)
   }
+  */
 }
