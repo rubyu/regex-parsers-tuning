@@ -73,8 +73,8 @@ object WokParser {
     lazy val field : Parser[String] = QM match {
       case QuoteAll (Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
       case QuoteAll (Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
-      case QuoteMin (Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
-      case QuoteMin (Some(q),    None, _) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
+      case QuoteMin (Some(q), Some(e), _) => quoted( q, text(q, e) ) | not(q) ~> non_quoted(e) // quote if contains Q, and escape Q with E
+      case QuoteMin (Some(q),    None, _) => quoted( q, text(q) )    | not(q) ~> non_quoted    // quote if contains Q, and escape nothing
       case QuoteNone(         Some(e), _) => non_quoted(e)                           // escape (E|FS|RS) with E
       case QuoteNone(            None, _) => non_quoted                              // escape nothing
     }
