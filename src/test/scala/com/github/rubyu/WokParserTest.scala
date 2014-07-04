@@ -35,6 +35,7 @@ class WokParserTest extends SpecificationWithJUnit {
       parser.parse(parser.field, "a\r\n").get mustEqual "a"
       parser.parse(parser.field, "a\r").get mustEqual "a"
       parser.parse(parser.field, "a\n").get mustEqual "a"
+      parser.parse(parser.field, "a\\\\").get mustEqual "a\\"
       parser.parse(parser.field, "a\\\t").get mustEqual "a\t"
       parser.parse(parser.field, "a\\\r\n").get mustEqual "a\r\n"
       parser.parse(parser.field, "a\\\r").get mustEqual "a\r"
@@ -45,6 +46,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None withEscape('*')
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      parser.parse(parser.field, "a**").get mustEqual "a*"
       parser.parse(parser.field, "a*\t").get mustEqual "a\t"
       parser.parse(parser.field, "a*\r\n").get mustEqual "a\r\n"
       parser.parse(parser.field, "a*\r").get mustEqual "a\r"
