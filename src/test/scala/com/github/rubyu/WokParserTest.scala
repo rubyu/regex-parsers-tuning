@@ -68,6 +68,10 @@ class WokParserTest extends SpecificationWithJUnit {
       val FQ = Quote.None withEscape('\\')
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
 
+      parser.parse(parser.field, "\\").get mustEqual ""         //more loose than Python
+      parser.parse(parser.field, "a\\").get mustEqual "a"       //more loose than Python
+      parser.parse(parser.field, "\\b").get mustEqual "b"       //compatible with Python
+
       parser.parse(parser.field, "\\\\").get mustEqual "\\"
       parser.parse(parser.field, "\\\t").get mustEqual "\t"
       parser.parse(parser.field, "\\\r\n").get mustEqual "\r\n"
@@ -87,6 +91,10 @@ class WokParserTest extends SpecificationWithJUnit {
       val FQ = Quote.None withEscape('*')
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
 
+      parser.parse(parser.field, "*").get mustEqual ""         //more loose than Python
+      parser.parse(parser.field, "a*").get mustEqual "a"       //more loose than Python
+      parser.parse(parser.field, "*b").get mustEqual "b"       //compatible with Python
+
       parser.parse(parser.field, "**").get mustEqual "*"
       parser.parse(parser.field, "*\t").get mustEqual "\t"
       parser.parse(parser.field, "*\r\n").get mustEqual "\r\n"
@@ -98,17 +106,6 @@ class WokParserTest extends SpecificationWithJUnit {
       parser.parse(parser.field, "a*\r\n").get mustEqual "a\r\n"
       parser.parse(parser.field, "a*\r").get mustEqual "a\r"
       parser.parse(parser.field, "a*\n").get mustEqual "a\n"
-    }
-
-    "not to parse non-quoted strings contain invalid escape expressions" in {
-      val FS = "\t".r
-      val RS = "(\r\n|\r|\n)".r
-      val FQ = Quote.None withEscape('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
-
-      parser.parse(parser.line, "\\").isEmpty must beTrue
-      parser.parse(parser.line, "a\\").isEmpty must beTrue
-      parser.parse(parser.line, "\\b").isEmpty must beTrue
     }
 
     "parse Row" in {
@@ -273,6 +270,10 @@ class WokParserTest extends SpecificationWithJUnit {
       val FQ = Quote.Min withEscape('\\')
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
 
+      parser.parse(parser.field, "\\").get mustEqual ""         //more loose than Python
+      parser.parse(parser.field, "a\\").get mustEqual "a"       //more loose than Python
+      parser.parse(parser.field, "\\b").get mustEqual "b"       //compatible with Python
+
       parser.parse(parser.field, "\\\\").get mustEqual "\\"
       parser.parse(parser.field, "\\\t").get mustEqual "\t"
       parser.parse(parser.field, "\\\r\n").get mustEqual "\r\n"
@@ -291,6 +292,10 @@ class WokParserTest extends SpecificationWithJUnit {
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min withEscape('*')
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
+
+      parser.parse(parser.field, "*").get mustEqual ""         //more loose than Python
+      parser.parse(parser.field, "a*").get mustEqual "a"       //more loose than Python
+      parser.parse(parser.field, "*b").get mustEqual "b"       //compatible with Python
 
       parser.parse(parser.field, "**").get mustEqual "*"
       parser.parse(parser.field, "*\t").get mustEqual "\t"
@@ -312,20 +317,9 @@ class WokParserTest extends SpecificationWithJUnit {
       val parser = new WokParser.ParserImpl(FS, RS, FQ)
 
       parser.parse(parser.field, "\"").isEmpty must beTrue
-      parser.parse(parser.field, "\"a").isEmpty must beTrue    //compatible with Python
+      parser.parse(parser.field, "\"a").isEmpty must beTrue
       parser.parse(parser.field, "a\"").get mustEqual "a\""   //compatible with Python
       parser.parse(parser.field, "a\"b").get mustEqual "a\"b" //compatible with Python
-    }
-
-    "not to parse non-quoted strings contain invalid escape expressions" in {
-      val FS = "\t".r
-      val RS = "(\r\n|\r|\n)".r
-      val FQ = Quote.Min withEscape('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
-
-      parser.parse(parser.line, "\\").isEmpty must beTrue
-      parser.parse(parser.line, "a\\").isEmpty must beTrue
-      parser.parse(parser.line, "\\b").isEmpty must beTrue
     }
 
     "parse quoted strings" in {
@@ -395,7 +389,6 @@ class WokParserTest extends SpecificationWithJUnit {
       parser.parse(parser.line, "\"\"\"").isEmpty must beTrue
       parser.parse(parser.line, "\"\\\"").isEmpty must beTrue
       parser.parse(parser.line, "\"a\\\"").isEmpty must beTrue
-      parser.parse(parser.line, "\"\\b\"").isEmpty must beTrue
     }
 
     "parse Row" in {
@@ -563,7 +556,6 @@ class WokParserTest extends SpecificationWithJUnit {
       parser.parse(parser.line, "\"\"\"").isEmpty must beTrue
       parser.parse(parser.line, "\"\\\"").isEmpty must beTrue
       parser.parse(parser.line, "\"a\\\"").isEmpty must beTrue
-      parser.parse(parser.line, "\"\\b\"").isEmpty must beTrue
     }
 
     "parse Row" in {

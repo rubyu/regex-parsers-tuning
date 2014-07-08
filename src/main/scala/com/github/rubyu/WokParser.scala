@@ -84,9 +84,9 @@ object WokParser {
     //  QuoteでエスケープされたQuoteか、Quote以外からなる、長さ0以上の文字列。
     def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""((?!${ rsafe(Q) }).)+""".r ) ^^ { _.mkString }
     //  EscapeされたEscape・Quote・FS・RSか、Escape・Quote以外からなる、長さ0以上の文字列。
-    def text(Q: Char, E: Char)             : Parser[String] = rep( Q ~> Q | E ~> Q | E ~> E | E ~> FS | E ~> RS | s"""((?!${ rsafe(Q) })(?!${ rsafe(E) }).)+""".r ) ^^ { _.mkString }
+    def text(Q: Char, E: Char)             : Parser[String] = rep( Q ~> Q | E ~> Q | E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""((?!${ rsafe(Q) })(?!${ rsafe(E) }).)+""".r ) ^^ { _.mkString }
     //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
-    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | s"""((?!${ rsafe(E) })(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
+    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""((?!${ rsafe(E) })(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
     //  FS・RS以外からなる、長さ0以上の文字列。
     def non_quoted                         : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
 
