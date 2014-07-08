@@ -97,10 +97,16 @@ object WokParser {
     }
   }
 
-  trait WokReader extends Iterator[Result] {
+  trait ParserOwner {
+    def parser: Parser
+  }
 
-    def in: io.Reader
-    def parser: ParserImpl
+  trait AbstractWok extends ParserOwner {
+
+  }
+
+
+  class WokReader(in: io.Reader, owner: ParserOwner) extends Iterator[Result] {
 
     private def read(until: Int): CharSequence = {
       val buf = new Array[Char](until)
@@ -119,8 +125,15 @@ object WokParser {
         buffer.length match {
           case 0 if reachEnd => None
           case _ =>
-            parser.parse(buffer) match {
-              case x if x.successful =>
+            owner.parser.parse(buffer) match {
+              /*
+              Parser may return false-positive Success() when not reachEnd and buffer is just the size of Row.
+              | Buffer  | Rest |
+              |---------|------|
+              | "a,b,c" | ""   | => Success
+              | "a,b"   | ",c" | => false-positive Success
+              */
+              case x if x.successful && (reachEnd || !x.next.atEnd) =>
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
                 Some(x.get.toRow(0))
               case x if canBeLast =>
