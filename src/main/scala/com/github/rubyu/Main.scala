@@ -4,6 +4,8 @@ import com.orangesignal.csv.CsvReader
 import java.io.{File, FileInputStream, InputStreamReader}
 import java.nio.charset.StandardCharsets
 import scala.collection.JavaConversions._
+import wok.Quote
+import wok.WokParser._
 
 
 object Main {
@@ -115,7 +117,28 @@ object Main {
          * [success] Total time: 15 s, completed 2014/06/24 14:09:29
          */
         new Reader4(new Parser3, input).collect { case e: Result.Row => e.value }
+      case "Wok" =>
+        /* > sbt "run Wok test2.tsv"
+         * total row: 12000
+         * total field: 36000
+         * total char: 47448571
+         * total sec: 7.1440
+         * row (per/sec): 1679.7312
+         * field (per/sec): 5039.1938
+         * char (per/sec): 6641737.5000
+         * GC .....done.
+         * [success] Total time: 20 s, completed 2014/07/09 16:59:32
+         */
+        val wok = new AbstractWok {
+          val FS = "\t".r
+          val RS = "(\r\n|\r|\n)".r
+          val FQ = Quote.Min
+          def parser = new ParserImpl(FS, RS, FQ)
+        }
+        val reader = new RowReader(input, wok)
+        reader.collect { case e: Row => e.field }
     }
+
     val result = itr
       .map { row => print("."); row }
       .map { row => (1, row.size, row.map(_.size).sum) }

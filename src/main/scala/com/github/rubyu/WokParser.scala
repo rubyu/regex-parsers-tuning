@@ -106,7 +106,7 @@ object WokParser {
   }
 
 
-  class WokReader(in: io.Reader, owner: ParserOwner) extends Iterator[Result] {
+  class RowReader(in: io.Reader, owner: ParserOwner) extends Iterator[Result] {
 
     private def read(until: Int): CharSequence = {
       val buf = new Array[Char](until)

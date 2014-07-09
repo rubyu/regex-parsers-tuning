@@ -7,9 +7,9 @@ import com.github.rubyu.parsertuning.wok.WokParser._
 import java.io
 
 
-class WokReaderTest extends SpecificationWithJUnit {
+class RowReaderTest extends SpecificationWithJUnit {
 
-  "WokReader" should {
+  "RowReader" should {
     "parse" in {
       val wok = new AbstractWok {
         val FS = "\t".r
@@ -17,7 +17,7 @@ class WokReaderTest extends SpecificationWithJUnit {
         val FQ = Quote.None
         def parser = new ParserImpl(FS, RS, FQ)
       }
-      val reader = new WokReader(new io.StringReader("a"), wok)
+      val reader = new RowReader(new io.StringReader("a"), wok)
       reader.toList mustEqual List(Row(0, List("a"), Nil, ""))
     }
   }
