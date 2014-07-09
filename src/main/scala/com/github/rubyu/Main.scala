@@ -122,12 +122,12 @@ object Main {
          * total row: 12000
          * total field: 36000
          * total char: 47448571
-         * total sec: 6.1810
-         * row (per/sec): 1941.4333
-         * field (per/sec): 5824.3003
-         * char (per/sec): 7676520.0000
+         * total sec: 4.5430
+         * row (per/sec): 2641.4263
+         * field (per/sec): 7924.2788
+         * char (per/sec): 10444325.0000
          * GC .....done.
-         * [success] Total time: 17 s, completed 2014/07/09 17:01:59
+         * [success] Total time: 41 s, completed 2014/07/10 0:59:15
          */
         val wok = new AbstractWok {
           val FS = "\t".r
