@@ -122,18 +122,18 @@ object Main {
          * total row: 12000
          * total field: 36000
          * total char: 47448571
-         * total sec: 7.1440
-         * row (per/sec): 1679.7312
-         * field (per/sec): 5039.1938
-         * char (per/sec): 6641737.5000
+         * total sec: 6.1810
+         * row (per/sec): 1941.4333
+         * field (per/sec): 5824.3003
+         * char (per/sec): 7676520.0000
          * GC .....done.
-         * [success] Total time: 20 s, completed 2014/07/09 16:59:32
+         * [success] Total time: 17 s, completed 2014/07/09 17:01:59
          */
         val wok = new AbstractWok {
           val FS = "\t".r
           val RS = "(\r\n|\r|\n)".r
           val FQ = Quote.Min
-          def parser = new ParserImpl(FS, RS, FQ)
+          val parser = new ParserImpl(FS, RS, FQ)
         }
         val reader = new RowReader(input, wok)
         reader.collect { case e: Row => e.field }
