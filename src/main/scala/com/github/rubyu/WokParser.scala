@@ -88,7 +88,7 @@ object WokParser {
     //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
     def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""((?!${ rsafe(E) })(?!$FS)(?!$RS).)+""".r ) ^^ { _.mkString }
     //  FS・RS以外からなる、長さ0以上の文字列。
-    def non_quoted                         : Parser[String] = s"""(((?!$FS)(?!$RS).)*)?""".r
+    def non_quoted                         : Parser[String] = s"""((?!$FS)(?!$RS).)*""".r
 
     def rsafe(c: Char): String = c match {
       case '\\' => """\\"""
