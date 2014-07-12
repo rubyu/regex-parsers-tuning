@@ -55,9 +55,9 @@ object WokParser {
     lazy val line      : Parser[Row1] = empty_row | row ~ (RS | EOF) ^^ { case row0 ~ term => row0.toRow1(term) }
     lazy val empty_row : Parser[Row1] = (RS | EOF) ^^ { Row1(Nil, Nil, _) }
 
-    lazy val row       : Parser[Row0] = ( rep( field ~ FS ) ).? ~ field ^^ {
-      case Some(x) ~ last => x.map {case f ~ fs => (f, fs) }.unzip match { case (t1, t2) => Row0(t1 :+ last, t2) }
-      case None ~ f       => Row0(List(f), Nil)
+    lazy val row       : Parser[Row0] = field ~ ( rep( FS ~ field ) ).? ^^ {
+      case first ~ Some(rest) => rest.map { case fs ~ f => (fs, f) }.unzip match { case (fs, f) => Row0(first +: f, fs) }
+      case first ~ None       => Row0(List(first), Nil)
     }
 
     def field : Parser[String]
