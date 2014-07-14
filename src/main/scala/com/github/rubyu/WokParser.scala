@@ -122,14 +122,16 @@ object WokParser {
     /*
     String enclosed with quote-strings.
       */
-    def quoted(Q: Char, T: Parser[String]) : Parser[String] = Q ~> T <~ Q
+    def quoted(Q: Char, T: Parser[String]): Parser[String] =
+      Q ~> T <~ Q
 
     /*
     Quote-characters escaped with another quote-character or
       strings consist of characters other than quote-character.
     Larger and not equal to zero.
      */
-    def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""[^${rsafe(Q)}]+""".r ) ^^ { _.mkString }
+    def text(Q: Char): Parser[String] =
+      rep( Q ~> Q | s"""[^${rsafe(Q)}]+""".r ) ^^ { _.mkString }
 
     /*
     Quote-characters escaped with another quote-character or
@@ -137,7 +139,8 @@ object WokParser {
       strings consist of characters other than quote-character and escape-character.
     Larger and not equal to zero.
      */
-    def text(Q: Char, E: Char)             : Parser[String] = rep( Q ~> Q | E ~> Q | E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""[^${rsafe(Q)}${rsafe(E)}]+""".r ) ^^ { _.mkString }
+    def text(Q: Char, E: Char): Parser[String] =
+      rep( Q ~> Q | E ~> s"""([${rsafe(Q)}${rsafe(E)}]|$FS|$RS)""".r | E ^^^ "" | s"""[^${rsafe(Q)}${rsafe(E)}]+""".r ) ^^ { _.mkString }
 
     /*
     Escape-characters, field-separators and line-separators escaped with escape-character or
@@ -146,13 +149,14 @@ object WokParser {
                          characters other than quote-character and escape-character.
     Larger and not equal to zero.
      */
-    def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${rsafe(E)}])+""".r ) ^^ { _.mkString }
-
+    def non_quoted(E: Char): Parser[String] =
+      rep( E ~> s"""([${rsafe(E)}]|$FS|$RS)""".r | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${rsafe(E)}])+""".r ) ^^ { _.mkString }
     /*
     Strings consist of strings other than field-separators and line-separators.
     Larger than zero.
      */
-    def non_quoted                         : Parser[String] = s"""((?!$FS)(?!$RS).)*""".r
+    def non_quoted: Parser[String] =
+      s"""((?!$FS)(?!$RS).)*""".r
 
     def rsafe(c: Char): String = c match {
       case '\\' => """\\"""

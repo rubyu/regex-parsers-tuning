@@ -8,6 +8,26 @@ import com.github.rubyu.parsertuning.wok.WokParser.Row1
 
 class WokParserTest extends SpecificationWithJUnit {
 
+  /*
+  "Access count benchmark" should {
+    var count = 0
+    class DebugCharSequence(seq: CharSequence) extends java.lang.CharSequence {
+      def charAt(n: Int) = { count += 1; seq.charAt(n) }
+      def subSequence(s: Int, e: Int) = new DebugCharSequence(seq.subSequence(s, e))
+      def length = seq.length
+      override def toString = seq.toString
+    }
+
+    "" in {
+      val dseq = new DebugCharSequence("\"a\\,a\"")
+      val parser = new WokParser.ParserImpl(",".r, "(\r\n|\r|\n)".r, Quote.All.withEscape('\\'))
+      parser.parse(parser.field, dseq)
+      println("access count: ", count)
+      success
+    }
+  }
+  */
+
   "WokParser.ParserImpl with QuoteNone" should {
     "parse non-quoted strings" in {
       val FS = "\t".r
