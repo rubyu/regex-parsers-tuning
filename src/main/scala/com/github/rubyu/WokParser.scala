@@ -59,7 +59,7 @@ object WokParser {
 
     # Wok
     ## Relaxations
-    * Records may be delimited by strings other than a line break (CRLF).
+    * Records may be delimited by strings other than CRLF.
      */
     lazy val line: Parser[Row1] =
       row_empty | row ~ (RS | EOF) ^^
@@ -71,10 +71,10 @@ object WokParser {
 
     /*
     # RFC4180
-    *  Within the header and each record, there may be one or more fields, separated by commas.
-    *  Each line should contain the same number of fields throughout the file.
-    *  Spaces are considered part of a field and should not be ignored.
-    *  The last field in the record must not be followed by a comma.
+    * Within the header and each record, there may be one or more fields, separated by commas.
+    * Each line should contain the same number of fields throughout the file.
+    * Spaces are considered part of a field and should not be ignored.
+    * The last field in the record must not be followed by a comma.
 
     # Wok
     ## Relaxations
@@ -127,7 +127,7 @@ object WokParser {
     }
 
     /*
-    String enclosed with quote-strings.
+    Strings enclosed with quote-characters.
       */
     def quoted(Q: Char, T: Parser[String]): Parser[String] =
       Q ~> T <~ Q
