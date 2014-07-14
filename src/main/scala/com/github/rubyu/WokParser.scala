@@ -179,6 +179,8 @@ object WokParser {
       }
     }
 
+    private var resultId = -1
+
     private var buffer: CharSequence = ""
     private var reachEnd = false
 
@@ -190,15 +192,17 @@ object WokParser {
           case _ =>
             owner.parser.parse(buffer) match {
               /*
-              Parser may return false-positive Success() when not reachEnd and buffer is just the size of Row.
+              Parser may return false-positive Success() when Reader hasn't reach to the in's end and buffer is just the size of Row.
+
               | Buffer  | Rest |
               |---------|------|
               | "a,b,c" | ""   | => Success
               | "a,b"   | ",c" | => false-positive Success
               */
               case x if x.successful && (reachEnd || !x.next.atEnd) =>
+                resultId += 1
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
-                Some(x.get.toRow(0))
+                Some(x.get.toRow(resultId))
               case x if canBeLast =>
                 Some(Error(buffer))
               case x =>
