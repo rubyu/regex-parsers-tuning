@@ -52,9 +52,31 @@ object WokParser {
   trait Parser extends RegexParsers {
     override val skipWhitespace = false
 
+    /*
+    # RFC4180
+    * Each record is located on a separate line, delimited by a line break (CRLF).
+    * The last record in the file may or may not have an ending line break.
+
+    # Wok
+    ## Relaxations
+    * Records may be delimited by strings other than a line break (CRLF).
+     */
     lazy val line      : Parser[Row1] = empty_row | row ~ (RS | EOF) ^^ { case row0 ~ term => row0.toRow1(term) }
     lazy val empty_row : Parser[Row1] = (RS | EOF) ^^ { Row1(Nil, Nil, _) }
 
+    /*
+    # RFC4180
+    *  Within the header and each record, there may be one or more fields, separated by commas.
+    *  Each line should contain the same number of fields throughout the file.
+    *  Spaces are considered part of a field and should not be ignored.
+    *  The last field in the record must not be followed by a comma.
+
+    # Wok
+    ## Relaxations
+    * Records may be empty.
+    * Fields may be separated by strings other than commas.
+    * Records may contain the variant number of fields.
+     */
     lazy val row       : Parser[Row0] = field ~ ( rep( FS ~ field ) ).? ^^ {
       case first ~ Some(rest) => rest.map { case fs ~ f => (fs, f) }.unzip match { case (fs, f) => Row0(first +: f, fs) }
       case first ~ None       => Row0(List(first), Nil)
@@ -70,6 +92,24 @@ object WokParser {
 
   class ParserImpl(val FS: Regex, val RS: Regex, val QM: QuoteMode) extends Parser {
 
+    /*
+    # RFC4180
+    * Each field may or may not be enclosed in double quotes (however some programs, such as Microsoft Excel, do not use
+        double quotes at all).
+    * If fields are not enclosed with double quotes, then double quotes may not appear inside the fields.
+    * Fields containing line breaks (CRLF), double quotes, and commas should be enclosed in double-quotes.
+    * If double-quotes are used to enclose fields, then a double-quote appearing inside a field must be escaped by
+        preceding it with another double quote.
+
+    # Wok
+    ## Specifications
+    * Escape characters escape Quote-characters, field-separators, line-separators and itself.
+
+    ## Relaxations
+    * Characters other than double quote may be used as quote character.
+    * Quote-characters, field-separators and line-separators, following right after escape-characters, may appear inside
+        the fields not enclosed with quote-characters.
+     */
     lazy val field : Parser[String] = QM match {
       case QuoteAll (Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
       case QuoteAll (Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
@@ -79,15 +119,39 @@ object WokParser {
       case QuoteNone(            None, _) => non_quoted                              // escape nothing
     }
 
-    //  Quoteで囲まれていること。
+    /*
+    String enclosed with quote-strings.
+      */
     def quoted(Q: Char, T: Parser[String]) : Parser[String] = Q ~> T <~ Q
-    //  QuoteでエスケープされたQuoteか、Quote以外からなる、長さ0以上の文字列。
+
+    /*
+    Quote-characters escaped with another quote-character or
+      strings consist of characters other than quote-character.
+    Larger and not equal to zero.
+     */
     def text(Q: Char)                      : Parser[String] = rep( Q ~> Q | s"""[^${rsafe(Q)}]+""".r ) ^^ { _.mkString }
-    //  EscapeされたEscape・Quote・FS・RSか、Escape・Quote以外からなる、長さ0以上の文字列。
+
+    /*
+    Quote-characters escaped with another quote-character or
+      escape-characters, field-separators and line-separators escaped with escape-character or
+      strings consist of characters other than quote-character and escape-character.
+    Larger and not equal to zero.
+     */
     def text(Q: Char, E: Char)             : Parser[String] = rep( Q ~> Q | E ~> Q | E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""[^${rsafe(Q)}${rsafe(E)}]+""".r ) ^^ { _.mkString }
-    //  EscapeされたEscape・FS・RSか、Escape・FS・RS以外からなる、長さ0以上の文字列。
+
+    /*
+    Escape-characters, field-separators and line-separators escaped with escape-character or
+      escape-characters or
+      strings consist of strings other than field-separators and line-separators and
+                         characters other than quote-character and escape-character.
+    Larger and not equal to zero.
+     */
     def non_quoted(E: Char)                : Parser[String] = rep( E ~> E | E ~> FS | E ~> RS | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${rsafe(E)}])+""".r ) ^^ { _.mkString }
-    //  FS・RS以外からなる、長さ0以上の文字列。
+
+    /*
+    Strings consist of strings other than field-separators and line-separators.
+    Larger than zero.
+     */
     def non_quoted                         : Parser[String] = s"""((?!$FS)(?!$RS).)*""".r
 
     def rsafe(c: Char): String = c match {
