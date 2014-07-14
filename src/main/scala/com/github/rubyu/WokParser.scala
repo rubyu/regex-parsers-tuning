@@ -7,37 +7,25 @@ import annotation.tailrec
 import util.matching.Regex
 import util.parsing.combinator.RegexParsers
 
-object Quote {
-
-  trait QuoteMode
-
-  case class QuoteAll(Q: Option[Char] = scala.None, E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
-    def withQuote(Q: Char) = this.copy(Q=Some(Q))
-    def withEscape(E: Char) = this.copy(E=Some(E))
-    def withPattern(P: Regex) = this.copy(P=Some(P))
-  }
-
-  case class QuoteMin(Q: Option[Char] = scala.None, E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
-    def withQuote(Q: Char) = this.copy(Q=Some(Q))
-    def withEscape(E: Char) = this.copy(E=Some(E))
-    def withPattern(P: Regex) = this.copy(P=Some(P))
-  }
-
-  case class QuoteNone(E: Option[Char] = scala.None, P: Option[Regex] = scala.None) extends QuoteMode {
-    def withEscape(E: Char) = this.copy(E=Some(E))
-    def withPattern(P: Regex) = this.copy(P=Some(P))
-  }
-
-  def All = QuoteAll() withQuote('"')
-  def Min = QuoteMin() withQuote('"')
-  def None = QuoteNone()
-}
-
-
-import Quote.{ QuoteMode, QuoteAll, QuoteMin, QuoteNone }
-
 
 object WokParser {
+
+  trait QuoteMode
+  case object QuoteAll extends QuoteMode
+  case object QuoteMin extends QuoteMode
+  case object QuoteNone extends QuoteMode
+
+  case class QuoteOption(M: QuoteMode=QuoteNone, Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) {
+    def All = this.copy(M=QuoteAll, Q=if (Q.isDefined) Q else Some('"'))
+    def Min = this.copy(M=QuoteMin, Q=if (Q.isDefined) Q else Some('"'))
+    def None = this.copy(M=QuoteNone, Q=scala.None)
+    def Q(c: Char): QuoteOption = this.copy(Q=Some(c))
+    def E(c: Char): QuoteOption = this.copy(E=Some(c))
+    def P(r: Regex): QuoteOption = this.copy(P=Some(r))
+  }
+
+  def Quote = QuoteOption()
+
 
   case class Row0(field: List[String], sep: List[String]) {
     def toRow1(term: String) = Row1(field, sep, term)
@@ -97,7 +85,7 @@ object WokParser {
     def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
   }
 
-  class ParserImpl(val FS: Regex, val RS: Regex, val QM: QuoteMode) extends Parser {
+  class ParserImpl(val FS: Regex, val RS: Regex, val QO: QuoteOption) extends Parser {
 
     /*
     # RFC4180
@@ -117,13 +105,13 @@ object WokParser {
     * Quote-characters, field-separators and line-separators, following right after escape-characters, may appear inside
         the fields not enclosed with quote-characters.
      */
-    lazy val field : Parser[String] = QM match {
-      case QuoteAll (Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
-      case QuoteAll (Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
-      case QuoteMin (Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
-      case QuoteMin (Some(q),    None, _) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
-      case QuoteNone(         Some(e), _) => non_quoted(e)                           // escape (E|FS|RS) with E
-      case QuoteNone(            None, _) => non_quoted                              // escape nothing
+    lazy val field : Parser[String] = QO match {
+      case QuoteOption(QuoteAll, Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
+      case QuoteOption(QuoteAll, Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
+      case QuoteOption(QuoteMin, Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
+      case QuoteOption(QuoteMin, Some(q),    None, _) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
+      case QuoteOption(QuoteNone,      _, Some(e), _) => non_quoted(e)                           // escape (E|FS|RS) with E
+      case QuoteOption(QuoteNone,      _,    None, _) => non_quoted                              // escape nothing
     }
 
     /*

@@ -4,7 +4,6 @@ import com.orangesignal.csv.CsvReader
 import java.io.{File, FileInputStream, InputStreamReader}
 import java.nio.charset.StandardCharsets
 import scala.collection.JavaConversions._
-import wok.Quote
 import wok.WokParser._
 
 
