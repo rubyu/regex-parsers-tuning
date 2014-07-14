@@ -85,6 +85,17 @@ object WokParser {
     def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
   }
 
+
+  implicit class EscapedRegexString(val s: String) extends AnyVal {
+    def er: Regex = new Regex(s.replaceAll("""(\\|\*|\+|\.|\?|\{|\}|\(|\)|\[|\]|\^|\$|\-|\|)""", """\\$1"""))
+  }
+
+
+  implicit class EscapedRegexChar(val c: Char) extends AnyVal {
+    def er: Regex = c.toString.er
+  }
+
+
   class ParserImpl(val FS: Regex, val RS: Regex, val QO: QuoteOption) extends Parser {
 
     /*
@@ -126,7 +137,7 @@ object WokParser {
     Larger and not equal to zero.
      */
     def text(Q: Char): Parser[String] =
-      rep( Q ~> Q | s"""[^${rsafe(Q)}]+""".r ) ^^ { _.mkString }
+      rep( Q ~> Q | s"""[^${Q.er}]+""".r ) ^^ { _.mkString }
 
     /*
     Quote-characters escaped with another quote-character or
@@ -135,7 +146,7 @@ object WokParser {
     Larger and not equal to zero.
      */
     def text(Q: Char, E: Char): Parser[String] =
-      rep( Q ~> Q | E ~> s"""([${rsafe(Q)}${rsafe(E)}]|$FS|$RS)""".r | E ^^^ "" | s"""[^${rsafe(Q)}${rsafe(E)}]+""".r ) ^^ { _.mkString }
+      rep( Q ~> Q | E ~> s"""(${Q.er}|${E.er}|$FS|$RS)""".r | E ^^^ "" | s"""[^${Q.er}${E.er}]+""".r ) ^^ { _.mkString }
 
     /*
     Escape-characters, field-separators and line-separators escaped with escape-character or
@@ -145,19 +156,13 @@ object WokParser {
     Larger and not equal to zero.
      */
     def non_quoted(E: Char): Parser[String] =
-      rep( E ~> s"""([${rsafe(E)}]|$FS|$RS)""".r | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${rsafe(E)}])+""".r ) ^^ { _.mkString }
+      rep( E ~> s"""(${E.er}|$FS|$RS)""".r | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${E.er}])+""".r ) ^^ { _.mkString }
     /*
     Strings consist of strings other than field-separators and line-separators.
     Larger than zero.
      */
     def non_quoted: Parser[String] =
       s"""((?!$FS)(?!$RS).)*""".r
-
-    def rsafe(c: Char): String = c match {
-      case '\\' => """\\"""
-      case '*' | '+' | '.' | '?' | '{' | '}' | '(' | ')' | '[' | ']' | '^' |'$' | '-' | '|'  => """\""" + c.toString
-      case _ => c.toString
-    }
   }
 
   trait ParserOwner {
