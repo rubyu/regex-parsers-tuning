@@ -61,8 +61,13 @@ object WokParser {
     ## Relaxations
     * Records may be delimited by strings other than a line break (CRLF).
      */
-    lazy val line      : Parser[Row1] = empty_row | row ~ (RS | EOF) ^^ { case row0 ~ term => row0.toRow1(term) }
-    lazy val empty_row : Parser[Row1] = (RS | EOF) ^^ { Row1(Nil, Nil, _) }
+    lazy val line: Parser[Row1] =
+      row_empty | row ~ (RS | EOF) ^^
+        { case row0 ~ term => row0.toRow1(term) }
+
+    lazy val row_empty: Parser[Row1] =
+      (RS | EOF) ^^
+        { Row1(Nil, Nil, _) }
 
     /*
     # RFC4180
@@ -77,15 +82,17 @@ object WokParser {
     * Fields may be separated by strings other than commas.
     * Records may contain the variant number of fields.
      */
-    lazy val row       : Parser[Row0] = field ~ ( rep( FS ~ field ) ).? ^^ {
-      case first ~ Some(rest) => rest.map { case fs ~ f => (fs, f) }.unzip match { case (fs, f) => Row0(first +: f, fs) }
-      case first ~ None       => Row0(List(first), Nil)
-    }
+    lazy val row: Parser[Row0] =
+      field ~ ( rep( FS ~ field ) ).? ^^
+        {
+          case first ~ Some(rest) => rest.map { case fs ~ f => (fs, f) }.unzip match { case (fs, f) => Row0(first +: f, fs) }
+          case first ~ None       => Row0(List(first), Nil)
+        }
 
-    def field : Parser[String]
-    def FS    : Regex
-    def RS    : Regex
-    def EOF   : Regex = """\z""".r
+    def field: Parser[String]
+    def FS: Regex
+    def RS: Regex
+    def EOF: Regex = """\z""".r
 
     def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
   }
