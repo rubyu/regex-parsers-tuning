@@ -98,7 +98,7 @@ object WokParser {
 
     # Wok
     ## Specifications
-    * Escape characters escape Quote-characters, field-separators, line-separators and itself.
+    * Escape characters escape quote-characters, field-separators, line-separators and itself.
 
     ## Relaxations
     * Characters other than double quote may be used as quote character.
