@@ -17,26 +17,15 @@ object WokParser {
   case object QuoteMin extends QuoteMode
   case object QuoteNone extends QuoteMode
 
-  //todo P いらないのでは
-  case class QuoteOption(M: QuoteMode=QuoteNone, Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) {
-    def All = this.copy(M=QuoteAll, Q=if (Q.isDefined) Q else Some('"'))
-    def Min = this.copy(M=QuoteMin, Q=if (Q.isDefined) Q else Some('"'))
-    def None = this.copy(M=QuoteNone)
+  case class QuoteOption(M: QuoteMode=QuoteNone, Q: Option[Char] = None, E: Option[Char] = None) {
+    def All() = this.copy(M=QuoteAll, Q=if (Q.isDefined) Q else Some('"'))
+    def Min() = this.copy(M=QuoteMin, Q=if (Q.isDefined) Q else Some('"'))
+    def None() = this.copy(M=QuoteNone)
     def Q(c: Char): QuoteOption = this.copy(Q=Some(c))
     def E(c: Char): QuoteOption = this.copy(E=Some(c))
-    def P(r: Regex): QuoteOption = this.copy(P=Some(r))
-
-    lazy val defaultP: Option[Regex] = {
-      val None = scala.None
-      (E, Q) match {
-        case (   None,       _) => None
-        case (Some(e),    None) => Some(e.er)
-        case (Some(e), Some(q)) => Some(s"""(${e.er}|${q.er})""".r)
-      }
-    }
   }
 
-  def Quote = QuoteOption()
+  def Quote() = QuoteOption()
 
 
   case class Row0(field: List[String], sep: List[String]) {
@@ -133,12 +122,12 @@ object WokParser {
     * Non-quoted fields may contain quote-characters.
      */
     lazy val field : Parser[String] = FQ match {
-      case QuoteOption(QuoteAll, Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
-      case QuoteOption(QuoteAll, Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
-      case QuoteOption(QuoteMin, Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
-      case QuoteOption(QuoteMin, Some(q),    None, _) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
-      case QuoteOption(QuoteNone,      _, Some(e), _) => non_quoted(e)                           // escape (E|FS|RS) with E
-      case QuoteOption(QuoteNone,      _,    None, _) => non_quoted                              // escape nothing
+      case QuoteOption(QuoteAll, Some(q), Some(e)) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
+      case QuoteOption(QuoteAll, Some(q),    None) => quoted( q, text(q) )                    // quote all, and escape nothing
+      case QuoteOption(QuoteMin, Some(q), Some(e)) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
+      case QuoteOption(QuoteMin, Some(q),    None) => quoted( q, text(q) )    | non_quoted    // quote if contains Q, and escape nothing
+      case QuoteOption(QuoteNone,      _, Some(e)) => non_quoted(e)                           // escape (E|FS|RS) with E
+      case QuoteOption(QuoteNone,      _,    None) => non_quoted                              // escape nothing
     }
 
     /*
@@ -210,7 +199,7 @@ object WokParser {
     def FQ(q: QuoteOption) = { fq = q; update(); this }
   }
 
-  def Parser = new MutableParser
+  def Parser() = new MutableParser
 
 
   implicit class QuotedString(val str: String) extends AnyVal {
@@ -230,31 +219,31 @@ object WokParser {
     private lazy val escape: String => String = {
       OFQ match {
         //escapes e and q in a given string with e and quotes it with q
-        case QuoteOption(QuoteAll, Some(q), Some(e), _) => { _.escaped(e, q).quoted(q) }
+        case QuoteOption(QuoteAll, Some(q), Some(e)) => { _.escaped(e, q).quoted(q) }
 
         //quotes a given string with q
-        case QuoteOption(QuoteAll, Some(q), None, _) => { _.escaped(q).quoted(q) }
+        case QuoteOption(QuoteAll, Some(q), None) => { _.escaped(q).quoted(q) }
 
         //escapes e and q in a given string with e and quotes it with q when it contains OFS or ORS
-        case QuoteOption(QuoteMin, Some(q), Some(e), _) => {
+        case QuoteOption(QuoteMin, Some(q), Some(e)) => {
           case s if s.contains(OFS) || s.contains(ORS) => s.escaped(e, q).quoted(q)
           case s => s.escaped(e, q)
         }
 
         //escapes q in a given string with q and quotes it with q when it contains OFS or ORS or q
-        case QuoteOption(QuoteMin, Some(q), None, _) => {
+        case QuoteOption(QuoteMin, Some(q), None) => {
           case s if s.contains(OFS) || s.contains(ORS) || s.contains(q) => s.escaped(q).quoted(q)
           case s => s
         }
 
         //escapes OFS in a given string with e and throws an error when it contains ORS
-        case QuoteOption(QuoteNone, _, Some(e), _) => {
+        case QuoteOption(QuoteNone, _, Some(e)) => {
           case s if s.contains(ORS) => throw new RuntimeException
           case s => s.escaped(e, OFS)
         }
 
         //throws an error when a given string contains OFS or ORS
-        case QuoteOption(QuoteNone, _, None, _) => {
+        case QuoteOption(QuoteNone, _, None) => {
           case s if s.contains(OFS) || s.contains(ORS) => throw new RuntimeException
           case s => s
         }
