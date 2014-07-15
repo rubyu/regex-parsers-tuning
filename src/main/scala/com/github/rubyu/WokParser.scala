@@ -2,10 +2,12 @@
 package com.github.rubyu.parsertuning.wok
 
 import java.io
+import io.PrintStream
 import java.lang.CharSequence
 import annotation.tailrec
 import util.matching.Regex
 import util.parsing.combinator.RegexParsers
+import java.nio.charset.StandardCharsets
 
 
 object WokParser {
@@ -15,6 +17,7 @@ object WokParser {
   case object QuoteMin extends QuoteMode
   case object QuoteNone extends QuoteMode
 
+  //todo P いらないのでは
   case class QuoteOption(M: QuoteMode=QuoteNone, Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) {
     def All = this.copy(M=QuoteAll, Q=if (Q.isDefined) Q else Some('"'))
     def Min = this.copy(M=QuoteMin, Q=if (Q.isDefined) Q else Some('"'))
@@ -44,7 +47,7 @@ object WokParser {
   }
   trait Result
   case class Row(id: Long, field: List[String], sep: List[String], term: String) extends Result
-  // throwしたほうがいいのでは？
+  //todo throwしたほうがいいのでは？
   case class Error(remaining: CharSequence) extends Result
 
 
@@ -58,9 +61,15 @@ object WokParser {
 
 
   trait CsvParser {
+    //todo
+    //def FS: Regex
+    //def RS: Regex
+    //def FQ: QuoteOption
     def parse(in: CharSequence): RegexParsers#ParseResult[Row1]
   }
 
+  //todo case classである必要ないような
+  // -> FS, RS, FQをinterfaceにするべき？
   case class WokCsvParser(FS: Regex, RS: Regex, FQ: QuoteOption) extends CsvParser with RegexParsers {
     override val skipWhitespace = false
 
@@ -164,6 +173,7 @@ object WokParser {
      */
     def non_quoted(E: Char): Parser[String] =
       rep( E ~> s"""(${E.er}|$FS|$RS)""".r | E ^^^ "" | s"""((?!$FS)(?!$RS)[^${E.er}])+""".r ) ^^ { _.mkString }
+
     /*
     Strings consist of strings other than field-separators and line-separators.
     Larger than zero.
@@ -190,6 +200,7 @@ object WokParser {
     def RS = rs
     def FQ = fq
 
+    //todo FS_= {} にする
     def FS(r: Regex) = { fs = r; update(); this }
     def RS(r: Regex) = { rs = r; update(); this }
 
@@ -200,6 +211,66 @@ object WokParser {
   }
 
   def Parser = new MutableParser
+
+
+  implicit class QuotedString(val str: String) extends AnyVal {
+    def quoted(q: Char): String = q.toString + str + q.toString
+  }
+
+  implicit class EscapedString(val str: String) extends AnyVal {
+    def escaped(e: Char): String = str.escaped(e.toString)
+    def escaped(e: Char, t: Char): String = str.escaped(e.toString, t.toString)
+    def escaped(e: Char, t: String): String = str.escaped(e.toString, t)
+    def escaped(e: String, t: String): String = str.escaped(e).replace(t, e + t)
+    def escaped(e: String): String = str.replace(e, e + e)
+  }
+
+  class Writer(OFS: String, ORS: String, OFQ: QuoteOption) {
+
+    private lazy val escape: String => String = {
+      OFQ match {
+        //escapes e and q in a given string with e and quotes it with q
+        case QuoteOption(QuoteAll, Some(q), Some(e), _) => { _.escaped(e, q).quoted(q) }
+
+        //quotes a given string with q
+        case QuoteOption(QuoteAll, Some(q), None, _) => { _.escaped(q).quoted(q) }
+
+        //escapes e and q in a given string with e and quotes it with q when it contains OFS or ORS
+        case QuoteOption(QuoteMin, Some(q), Some(e), _) => {
+          case s if s.contains(OFS) || s.contains(ORS) => s.escaped(e, q).quoted(q)
+          case s => s.escaped(e, q)
+        }
+
+        //escapes q in a given string with q and quotes it with q when it contains OFS or ORS or q
+        case QuoteOption(QuoteMin, Some(q), None, _) => {
+          case s if s.contains(OFS) || s.contains(ORS) || s.contains(q) => s.escaped(q).quoted(q)
+          case s => s
+        }
+
+        //escapes OFS in a given string with e and throws an error when it contains ORS
+        case QuoteOption(QuoteNone, _, Some(e), _) => {
+          case s if s.contains(ORS) => throw new RuntimeException
+          case s => s.escaped(e, OFS)
+        }
+
+        //throws an error when a given string contains OFS or ORS
+        case QuoteOption(QuoteNone, _, None, _) => {
+          case s if s.contains(OFS) || s.contains(ORS) => throw new RuntimeException
+          case s => s
+        }
+      }
+    }
+
+    //todo support codec
+    def write(out: PrintStream, x: Any) {
+      val str = x match {
+        case x: Seq[_] => x.map { x => escape(x.toString) } mkString(OFS)
+        case x => escape(x.toString)
+      }
+      out.write(str.getBytes(StandardCharsets.UTF_8))
+      out.write(ORS.getBytes(StandardCharsets.UTF_8))
+    }
+  }
 
 
   class RowReader(in: io.Reader, parser: CsvParser) extends Iterator[Result] {
@@ -225,7 +296,8 @@ object WokParser {
           case _ =>
             parser.parse(buffer) match {
               /*
-              Parser possibly returns false-positive Success() when Reader hasn't reach to the in's end and buffer is just the size of Row.
+              Parser possibly returns false-positive Success() when Reader hasn't reach to the in's end and
+                result.next.size is zero.
 
               | Buffer  | Rest |
               |---------|------|
@@ -237,7 +309,7 @@ object WokParser {
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
                 Some(x.get.toRow(resultId))
               case x if canBeLast =>
-                Some(Error(buffer))
+                Some(Error(buffer))  //todo throw
               case x =>
                 if (!reachEnd) {
                   reachEnd = read(math.max(1000000, buffer.length)) match {
