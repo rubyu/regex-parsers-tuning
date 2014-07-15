@@ -18,15 +18,25 @@ object WokParser {
   case class QuoteOption(M: QuoteMode=QuoteNone, Q: Option[Char] = None, E: Option[Char] = None, P: Option[Regex] = None) {
     def All = this.copy(M=QuoteAll, Q=if (Q.isDefined) Q else Some('"'))
     def Min = this.copy(M=QuoteMin, Q=if (Q.isDefined) Q else Some('"'))
-    def None = this.copy(M=QuoteNone, Q=scala.None)
+    def None = this.copy(M=QuoteNone)
     def Q(c: Char): QuoteOption = this.copy(Q=Some(c))
     def E(c: Char): QuoteOption = this.copy(E=Some(c))
     def P(r: Regex): QuoteOption = this.copy(P=Some(r))
+
+    lazy val defaultP: Option[Regex] = {
+      val None = scala.None
+      (E, Q) match {
+        case (   None,       _) => None
+        case (Some(e),    None) => Some(e.er)
+        case (Some(e), Some(q)) => Some(s"""(${e.er}|${q.er})""".r)
+      }
+    }
   }
 
   def Quote = QuoteOption()
 
 
+  //todo 最初からRowを使うとよいのでは
   case class Row0(field: List[String], sep: List[String]) {
     def toRow1(term: String) = Row1(field, sep, term)
   }
@@ -35,6 +45,7 @@ object WokParser {
   }
   trait Result
   case class Row(id: Long, field: List[String], sep: List[String], term: String) extends Result
+  // throwしたほうがいいのでは？
   case class Error(remaining: CharSequence) extends Result
 
   trait Parser extends RegexParsers {
@@ -96,7 +107,19 @@ object WokParser {
   }
 
 
-  class ParserImpl(val FS: Regex, val RS: Regex, val QO: QuoteOption) extends Parser {
+  case class ParserImpl(FS: Regex, RS: Regex, FQ: QuoteOption) extends Parser {
+
+
+    //todo MutableParserにまかせる
+
+    //これはMutableなParserOwnerで実装するのがよいかな
+    /*
+    def FS(fs: Regex) =
+    def RS(rs: Regex) =
+    def FS(fs: String) =
+    def RS(rs: String) =
+    def FQ(fq: QuoteOption) =
+    */
 
     /*
     # RFC4180
@@ -110,13 +133,17 @@ object WokParser {
     # Wok
     ## Specifications
     * Escape characters escape quote-characters, field-separators, line-separators and itself.
+    * Fields enclosed with quote-characters and not containing any quote-character excluding those escaped by another
+        quote-character or a escape-character are treated as quoted fields, otherwise the fields are treated as
+        non-quoted fields.
 
     ## Relaxations
     * Characters other than double quote may be used as quote character.
     * Quote-characters, field-separators and line-separators, following right after escape-characters, may appear inside
-        the fields not enclosed with quote-characters.
+        the fields both enclosed and not enclosed with quote-characters.
+    * Non-quoted fields may contain quote-characters.
      */
-    lazy val field : Parser[String] = QO match {
+    lazy val field : Parser[String] = FQ match {
       case QuoteOption(QuoteAll, Some(q), Some(e), _) => quoted( q, text(q, e) )                 // quote all, and escape Q with E
       case QuoteOption(QuoteAll, Some(q),    None, _) => quoted( q, text(q) )                    // quote all, and escape nothing
       case QuoteOption(QuoteMin, Some(q), Some(e), _) => quoted( q, text(q, e) ) | non_quoted(e) // quote if contains Q, and escape Q with E
@@ -169,6 +196,7 @@ object WokParser {
     def parser: Parser
   }
 
+  //todo MutableParser
   trait AbstractWok extends ParserOwner {
 
   }
@@ -197,7 +225,7 @@ object WokParser {
           case _ =>
             owner.parser.parse(buffer) match {
               /*
-              Parser may return false-positive Success() when Reader hasn't reach to the in's end and buffer is just the size of Row.
+              Parser possibly returns false-positive Success() when Reader hasn't reach to the in's end and buffer is just the size of Row.
 
               | Buffer  | Rest |
               |---------|------|

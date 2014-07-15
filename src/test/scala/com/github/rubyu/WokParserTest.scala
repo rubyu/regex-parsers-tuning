@@ -8,6 +8,14 @@ import com.github.rubyu.parsertuning.wok.WokParser._
 
 class WokParserTest extends SpecificationWithJUnit {
 
+  "QuoteOption" should {
+    "return defaultP" in {
+      Quote.defaultP mustEqual None
+      Quote.E('\\').defaultP.get.toString mustEqual """\\""".r.toString
+      Quote.E('\\').Q('"').defaultP.get.toString mustEqual """(\\|")""".r.toString
+    }
+  }
+
   /*
   "Access count benchmark" should {
     var count = 0
