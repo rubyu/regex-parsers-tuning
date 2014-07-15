@@ -36,7 +36,6 @@ object WokParser {
   def Quote = QuoteOption()
 
 
-  //todo 最初からRowを使うとよいのでは
   case class Row0(field: List[String], sep: List[String]) {
     def toRow1(term: String) = Row1(field, sep, term)
   }
@@ -48,7 +47,21 @@ object WokParser {
   // throwしたほうがいいのでは？
   case class Error(remaining: CharSequence) extends Result
 
-  trait Parser extends RegexParsers {
+
+  implicit class EscapedRegexString(val s: String) extends AnyVal {
+    def er: Regex = new Regex(s.replaceAll("""(\\|\*|\+|\.|\?|\{|\}|\(|\)|\[|\]|\^|\$|\-|\|)""", """\\$1"""))
+  }
+
+  implicit class EscapedRegexChar(val c: Char) extends AnyVal {
+    def er: Regex = c.toString.er
+  }
+
+
+  trait CsvParser {
+    def parse(in: CharSequence): RegexParsers#ParseResult[Row1]
+  }
+
+  case class WokCsvParser(FS: Regex, RS: Regex, FQ: QuoteOption) extends CsvParser with RegexParsers {
     override val skipWhitespace = false
 
     /*
@@ -87,39 +100,6 @@ object WokParser {
           case first ~ Some(rest) => rest.map { case fs ~ f => (fs, f) }.unzip match { case (fs, f) => Row0(first +: f, fs) }
           case first ~ None       => Row0(List(first), Nil)
         }
-
-    def field: Parser[String]
-    def FS: Regex
-    def RS: Regex
-    def EOF: Regex = """\z""".r
-
-    def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
-  }
-
-
-  implicit class EscapedRegexString(val s: String) extends AnyVal {
-    def er: Regex = new Regex(s.replaceAll("""(\\|\*|\+|\.|\?|\{|\}|\(|\)|\[|\]|\^|\$|\-|\|)""", """\\$1"""))
-  }
-
-
-  implicit class EscapedRegexChar(val c: Char) extends AnyVal {
-    def er: Regex = c.toString.er
-  }
-
-
-  case class ParserImpl(FS: Regex, RS: Regex, FQ: QuoteOption) extends Parser {
-
-
-    //todo MutableParserにまかせる
-
-    //これはMutableなParserOwnerで実装するのがよいかな
-    /*
-    def FS(fs: Regex) =
-    def RS(rs: Regex) =
-    def FS(fs: String) =
-    def RS(rs: String) =
-    def FQ(fq: QuoteOption) =
-    */
 
     /*
     # RFC4180
@@ -190,19 +170,39 @@ object WokParser {
      */
     def non_quoted: Parser[String] =
       s"""((?!$FS)(?!$RS).)*""".r
+
+    def EOF: Regex = """\z""".r
+
+    def parse(in: CharSequence) = parse(line, in)
   }
 
-  trait ParserOwner {
-    def parser: Parser
+  class MutableParser extends CsvParser {
+    private var fs = """\s+""".r
+    private var rs = """(\r\n|\r|\n)""".r
+    private var fq = QuoteOption()
+    private var parser: CsvParser = new WokCsvParser(fs, rs, fq)
+
+    private def update() { parser = new WokCsvParser(fs, rs, fq) }
+
+    def parse(in: CharSequence) = parser.parse(in)
+
+    def FS = fs
+    def RS = rs
+    def FQ = fq
+
+    def FS(r: Regex) = { fs = r; update(); this }
+    def RS(r: Regex) = { rs = r; update(); this }
+
+    def FS(s: String) = { fs = s.er; update(); this }
+    def RS(s: String) = { rs = s.er; update(); this }
+
+    def FQ(q: QuoteOption) = { fq = q; update(); this }
   }
 
-  //todo MutableParser
-  trait AbstractWok extends ParserOwner {
-
-  }
+  def Parser = new MutableParser
 
 
-  class RowReader(in: io.Reader, owner: ParserOwner) extends Iterator[Result] {
+  class RowReader(in: io.Reader, parser: CsvParser) extends Iterator[Result] {
 
     private def read(until: Int): CharSequence = {
       val buf = new Array[Char](until)
@@ -223,7 +223,7 @@ object WokParser {
         buffer.length match {
           case 0 if reachEnd => None
           case _ =>
-            owner.parser.parse(buffer) match {
+            parser.parse(buffer) match {
               /*
               Parser possibly returns false-positive Success() when Reader hasn't reach to the in's end and buffer is just the size of Row.
 

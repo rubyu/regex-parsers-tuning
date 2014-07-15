@@ -128,13 +128,11 @@ object Main {
          * GC .....done.
          * [success] Total time: 25 s, completed 2014/07/13 8:27:51
          */
-        val wok = new AbstractWok {
-          val FS = "\t".r
-          val RS = "(\r\n|\r|\n)".r
-          val FQ = Quote.Min
-          val parser = new ParserImpl(FS, RS, FQ)
-        }
-        val reader = new RowReader(input, wok)
+        val parser = Parser
+          .FS("""\t""".r)
+          .RS("""(\r\n|\r|\n)""".r)
+          .FQ(Quote Min)
+        val reader = new RowReader(input, parser)
         reader.collect { case e: Row => e.field }
     }
 

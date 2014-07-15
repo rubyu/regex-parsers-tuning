@@ -28,7 +28,7 @@ class WokParserTest extends SpecificationWithJUnit {
 
     "" in {
       val dseq = new DebugCharSequence("\"a\\,a\"")
-      val parser = new WokParser.ParserImpl(",".r, "(\r\n|\r|\n)".r, Quote.All.E('\\'))
+      val parser = new WokParser.WokCsvParser(",".r, "(\r\n|\r|\n)".r, Quote.All.E('\\'))
       parser.parse(parser.field, dseq)
       println("access count: ", count)
       success
@@ -36,12 +36,12 @@ class WokParserTest extends SpecificationWithJUnit {
   }
   */
 
-  "WokParser.ParserImpl with QuoteNone" should {
+  "WokParser.WokCsvParser with QuoteNone" should {
     "parse non-quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "").get mustEqual ""
       parser.parse(parser.field, "a").get mustEqual "a"
@@ -55,7 +55,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "").get mustEqual Row1(Nil, Nil, "")
       parser.parse(parser.line, "a").get mustEqual Row1(List("a"), Nil, "")
@@ -75,12 +75,12 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
-  "WokParser.ParserImpl with QuoteNone with Escape" should {
+  "WokParser.WokCsvParser with QuoteNone with Escape" should {
     "parse non-quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "").get mustEqual ""
       parser.parse(parser.field, "a").get mustEqual "a"
@@ -94,7 +94,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\\").get mustEqual ""         //more loose than Python
       parser.parse(parser.field, "a\\").get mustEqual "a"       //more loose than Python
@@ -117,7 +117,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None E('*')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "*").get mustEqual ""         //more loose than Python
       parser.parse(parser.field, "a*").get mustEqual "a"       //more loose than Python
@@ -140,7 +140,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.None E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "").get mustEqual Row1(Nil, Nil, "")
       parser.parse(parser.line, "a").get mustEqual Row1(List("a"), Nil, "")
@@ -178,12 +178,12 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
-  "WokParser.ParserImpl with QuoteMin" should {
+  "WokParser.WokCsvParser with QuoteMin" should {
     "parse non-quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "").get mustEqual ""
       parser.parse(parser.field, "a").get mustEqual "a"
@@ -197,7 +197,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"").get mustEqual "\""     //more loose than Python
       parser.parse(parser.field, "\"a").get mustEqual "\"a"   //more loose than Python
@@ -209,7 +209,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\"").get mustEqual ""
       parser.parse(parser.field, "\"a\"").get mustEqual "a"
@@ -225,7 +225,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "").get mustEqual Row1(Nil, Nil, "")
       parser.parse(parser.line, "a").get mustEqual Row1(List("a"), Nil, "")
@@ -277,12 +277,12 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
-  "WokParser.ParserImpl with QuoteMin with Escape" should {
+  "WokParser.WokCsvParser with QuoteMin with Escape" should {
     "parse non-quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "").get mustEqual ""
       parser.parse(parser.field, "a").get mustEqual "a"
@@ -296,7 +296,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\\").get mustEqual ""         //more loose than Python
       parser.parse(parser.field, "a\\").get mustEqual "a"       //more loose than Python
@@ -319,7 +319,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('*')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "*").get mustEqual ""         //more loose than Python
       parser.parse(parser.field, "a*").get mustEqual "a"       //more loose than Python
@@ -342,7 +342,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"").get mustEqual "\""     //more loose than Python
       parser.parse(parser.field, "\"a").get mustEqual "\"a"   //more loose than Python
@@ -354,7 +354,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\"").get mustEqual ""
       parser.parse(parser.field, "\"a\"").get mustEqual "a"
@@ -370,7 +370,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\\\"\"").get mustEqual "\""
       parser.parse(parser.field, "\"\\\\\"").get mustEqual "\\"
@@ -391,7 +391,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('*')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"*\"\"").get mustEqual "\""
       parser.parse(parser.field, "\"**\"").get mustEqual "*"
@@ -412,7 +412,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "\"\"\"").isEmpty must beTrue
       parser.parse(parser.line, "\"\\\"").isEmpty must beTrue
@@ -423,7 +423,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "").get mustEqual Row1(Nil, Nil, "")
       parser.parse(parser.line, "a").get mustEqual Row1(List("a"), Nil, "")
@@ -475,12 +475,12 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
-  "WokParser.ParserImpl with QuoteAll" should {
+  "WokParser.WokCsvParser with QuoteAll" should {
     "parse quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\"").get mustEqual ""
       parser.parse(parser.field, "\"a\"").get mustEqual "a"
@@ -496,7 +496,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "\"\"").get mustEqual Row1(List(""), Nil, "")
       parser.parse(parser.line, "\"a\"").get mustEqual Row1(List("a"), Nil, "")
@@ -516,12 +516,12 @@ class WokParserTest extends SpecificationWithJUnit {
     }
   }
 
-  "WokParser.ParserImpl with QuoteAll with Escape" should {
+  "WokParser.WokCsvParser with QuoteAll with Escape" should {
     "parse quoted strings" in {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\"").get mustEqual ""
       parser.parse(parser.field, "\"a\"").get mustEqual "a"
@@ -537,7 +537,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"\\\"\"").get mustEqual "\""
       parser.parse(parser.field, "\"\\\\\"").get mustEqual "\\"
@@ -558,7 +558,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.Min E('*')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.field, "\"*\"\"").get mustEqual "\""
       parser.parse(parser.field, "\"**\"").get mustEqual "*"
@@ -579,7 +579,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "\"\"\"").isEmpty must beTrue
       parser.parse(parser.line, "\"\\\"").isEmpty must beTrue
@@ -590,7 +590,7 @@ class WokParserTest extends SpecificationWithJUnit {
       val FS = "\t".r
       val RS = "(\r\n|\r|\n)".r
       val FQ = Quote.All E('\\')
-      val parser = new WokParser.ParserImpl(FS, RS, FQ)
+      val parser = new WokParser.WokCsvParser(FS, RS, FQ)
 
       parser.parse(parser.line, "\"\"").get mustEqual Row1(List(""), Nil, "")
       parser.parse(parser.line, "\"a\"").get mustEqual Row1(List("a"), Nil, "")
