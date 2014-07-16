@@ -128,12 +128,12 @@ object Main {
          * GC .....done.
          * [success] Total time: 25 s, completed 2014/07/13 8:27:51
          */
-        val parser = Parser
+        Reader()
           .FS("""\t""".r)
           .RS("""(\r\n|\r|\n)""".r)
-          .FQ(Quote Min)
-        val reader = new RowReader(input, parser)
-        reader.collect { case e: Row => e.field }
+          .FQ(Quote() Min())
+          .open(input)
+          .collect { case e: Row => e.field }
     }
 
     val result = itr

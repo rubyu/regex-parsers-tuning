@@ -2,7 +2,7 @@
 package com.github.rubyu.parsertuning.wok
 
 import java.io
-import io.PrintStream
+import io.{InputStream, PrintStream}
 import java.lang.CharSequence
 import annotation.tailrec
 import util.matching.Regex
@@ -34,10 +34,7 @@ object WokParser {
   case class Row1(field: List[String], sep: List[String], term: String) {
     def toRow(id: Long) = Row(id, field, sep, term)
   }
-  trait Result
-  case class Row(id: Long, field: List[String], sep: List[String], term: String) extends Result
-  //todo throwしたほうがいいのでは？
-  case class Error(remaining: CharSequence) extends Result
+  case class Row(id: Long, field: List[String], sep: List[String], term: String)
 
 
   implicit class EscapedRegexString(val s: String) extends AnyVal {
@@ -49,17 +46,7 @@ object WokParser {
   }
 
 
-  trait CsvParser {
-    //todo
-    //def FS: Regex
-    //def RS: Regex
-    //def FQ: QuoteOption
-    def parse(in: CharSequence): RegexParsers#ParseResult[Row1]
-  }
-
-  //todo case classである必要ないような
-  // -> FS, RS, FQをinterfaceにするべき？
-  case class WokCsvParser(FS: Regex, RS: Regex, FQ: QuoteOption) extends CsvParser with RegexParsers {
+  class WokCsvParser(FS: Regex, RS: Regex, FQ: QuoteOption) extends RegexParsers {
     override val skipWhitespace = false
 
     /*
@@ -172,14 +159,14 @@ object WokParser {
 
     def EOF: Regex = """\z""".r
 
-    def parse(in: CharSequence) = parse(line, in)
+    def parse(in: CharSequence): ParseResult[Row1] = parse(line, in)
   }
 
-  class MutableParser extends CsvParser {
+  class WokCsvReader {
     private var fs = """\s+""".r
     private var rs = """(\r\n|\r|\n)""".r
     private var fq = QuoteOption()
-    private var parser: CsvParser = new WokCsvParser(fs, rs, fq)
+    private var parser = new WokCsvParser(fs, rs, fq)
 
     private def update() { parser = new WokCsvParser(fs, rs, fq) }
 
@@ -189,7 +176,6 @@ object WokParser {
     def RS = rs
     def FQ = fq
 
-    //todo FS_= {} にする
     def FS(r: Regex) = { fs = r; update(); this }
     def RS(r: Regex) = { rs = r; update(); this }
 
@@ -197,9 +183,11 @@ object WokParser {
     def RS(s: String) = { rs = s.er; update(); this }
 
     def FQ(q: QuoteOption) = { fq = q; update(); this }
+
+    def open(in: io.Reader) = new WokCsvRowIterator(in, this)
   }
 
-  def Parser() = new MutableParser
+  def Reader() = new WokCsvReader
 
 
   implicit class QuotedString(val str: String) extends AnyVal {
@@ -262,7 +250,7 @@ object WokParser {
   }
 
 
-  class RowReader(in: io.Reader, parser: CsvParser) extends Iterator[Result] {
+  class WokCsvRowIterator(in: io.Reader, parser: WokCsvReader) extends Iterator[Row] {
 
     private def read(until: Int): CharSequence = {
       val buf = new Array[Char](until)
@@ -277,9 +265,9 @@ object WokParser {
     private var buffer: CharSequence = ""
     private var reachEnd = false
 
-    private def parseNext(): Option[Result] = {
+    private def parseNext(): Option[Row] = {
       @tailrec
-      def _parseNext(canBeLast: Boolean = false): Option[Result] = {
+      def _parseNext(canBeLast: Boolean = false): Option[Row] = {
         buffer.length match {
           case 0 if reachEnd => None
           case _ =>
@@ -298,7 +286,7 @@ object WokParser {
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
                 Some(x.get.toRow(resultId))
               case x if canBeLast =>
-                Some(Error(buffer))  //todo throw
+                throw new RuntimeException(s"""parse failed at line ${resultId + 2}, after ${buffer.subSequence(0, 10)}""")
               case x =>
                 if (!reachEnd) {
                   reachEnd = read(math.max(1000000, buffer.length)) match {
@@ -314,7 +302,7 @@ object WokParser {
       _parseNext()
     }
 
-    private var _next: Option[Result] = None
+    private var _next: Option[Row] = None
 
     def hasNext = {
       _next match {
