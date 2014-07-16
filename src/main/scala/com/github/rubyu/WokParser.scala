@@ -163,6 +163,8 @@ object WokParser {
   }
 
   class WokCsvReader {
+    //todo support codec
+    //private var cd =
     private var fs = """\s+""".r
     private var rs = """(\r\n|\r|\n)""".r
     private var fq = QuoteOption()
@@ -202,7 +204,7 @@ object WokParser {
     def escaped(e: String): String = str.replace(e, e + e)
   }
 
-  class Writer(OFS: String, ORS: String, OFQ: QuoteOption) {
+  class WokCsvWriter(OFS: String, ORS: String, OFQ: QuoteOption) {
 
     private lazy val escape: String => String = {
       OFQ match {
