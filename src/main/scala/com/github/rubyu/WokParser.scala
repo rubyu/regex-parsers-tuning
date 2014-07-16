@@ -288,7 +288,7 @@ object WokParser {
                 buffer = buffer.subSequence(x.next.offset, buffer.length)
                 Some(x.get.toRow(resultId))
               case x if canBeLast =>
-                throw new RuntimeException(s"""parse failed at line ${resultId + 2}, after ${buffer.subSequence(0, 10)}""")
+                throw new RuntimeException(s"""parse failed at line ${resultId + 2}, after ${buffer.subSequence(0, Math.max(buffer.length, 10))}""")
               case x =>
                 if (!reachEnd) {
                   reachEnd = read(math.max(1000000, buffer.length)) match {
